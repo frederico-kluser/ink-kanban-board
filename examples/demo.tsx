@@ -121,17 +121,45 @@ function DemoApp() {
     return () => clearInterval(timer);
   }, []);
 
-  // Keyboard navigation for focus
+  // Keyboard navigation for focus (↑↓ within column, ←→ across columns)
   useInput((input, key) => {
-    const allKeys = tasks.map((t) => t.id);
-    const currentIndex = focusedKey ? allKeys.indexOf(focusedKey) : -1;
+    // Group tasks by column to enable 2D navigation
+    const colNames = ["todo", "doing", "done"] as const;
+    const colTasks = colNames.map((c) => tasks.filter((t) => t.column === c));
+
+    // Find current position as (col, row)
+    let col = -1, row = -1;
+    if (focusedKey) {
+      for (let c = 0; c < colTasks.length; c++) {
+        const r = colTasks[c]!.findIndex((t) => t.id === focusedKey);
+        if (r !== -1) { col = c; row = r; break; }
+      }
+    }
 
     if (key.downArrow || input === "j") {
-      const next = Math.min(allKeys.length - 1, currentIndex + 1);
-      setFocusedKey(allKeys[next] ?? null);
+      if (col === -1) { // nothing focused — pick first card of first non-empty column
+        const first = colTasks.find((c) => c.length > 0);
+        if (first) setFocusedKey(first[0]!.id);
+      } else {
+        const next = Math.min(colTasks[col]!.length - 1, row + 1);
+        setFocusedKey(colTasks[col]![next]!.id);
+      }
     } else if (key.upArrow || input === "k") {
-      const next = Math.max(0, currentIndex - 1);
-      setFocusedKey(allKeys[next] ?? null);
+      if (col === -1) return;
+      const next = Math.max(0, row - 1);
+      setFocusedKey(colTasks[col]![next]!.id);
+    } else if (key.rightArrow || input === "l") {
+      const nextCol = col === -1 ? 0 : Math.min(colTasks.length - 1, col + 1);
+      const target = colTasks[nextCol]!;
+      if (target.length > 0) {
+        setFocusedKey(target[Math.min(row < 0 ? 0 : row, target.length - 1)]!.id);
+      }
+    } else if (key.leftArrow || input === "h") {
+      const nextCol = col === -1 ? 0 : Math.max(0, col - 1);
+      const target = colTasks[nextCol]!;
+      if (target.length > 0) {
+        setFocusedKey(target[Math.min(row < 0 ? 0 : row, target.length - 1)]!.id);
+      }
     } else if (key.escape) {
       setFocusedKey(null);
     } else if (input === "q") {
@@ -185,7 +213,7 @@ function DemoApp() {
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1} justifyContent="space-between">
         <Text bold color="cyan">ink-kanban-board — Demo</Text>
-        <Text color="gray">↑↓/jk: focus • esc: unfocus • q: quit • tick: {tick}</Text>
+        <Text color="gray">↑↓/jk ←→/hl: navigate • esc: unfocus • q: quit • tick: {tick}</Text>
       </Box>
       <KanbanBoard
         columns={columns}

@@ -39,18 +39,7 @@ const allCards: KanbanCardData[] = [
 
 function FocusApp() {
   const { breakpoint, density } = useTerminalSize();
-  const [focusIdx, setFocusIdx] = useState(0);
-
-  useInput((input, key) => {
-    if (key.downArrow || input === "j")
-      setFocusIdx((i) => Math.min(allCards.length - 1, i + 1));
-    else if (key.upArrow || input === "k")
-      setFocusIdx((i) => Math.max(0, i - 1));
-    else if (key.escape) setFocusIdx(-1);
-    else if (input === "q") process.exit(0);
-  });
-
-  const focusedKey = focusIdx >= 0 ? allCards[focusIdx]!.key : null;
+  const [focusedKey, setFocusedKey] = useState<string | null>(allCards[0]?.key ?? null);
 
   const columns: KanbanColumn[] = [
     {
@@ -73,12 +62,53 @@ function FocusApp() {
     },
   ];
 
+  // 2D navigation: ↑↓/jk within column, ←→/hl across columns
+  useInput((input, key) => {
+    let col = -1, row = -1;
+    if (focusedKey) {
+      for (let c = 0; c < columns.length; c++) {
+        const r = columns[c]!.cards.findIndex((card) => card.key === focusedKey);
+        if (r !== -1) { col = c; row = r; break; }
+      }
+    }
+
+    if (key.downArrow || input === "j") {
+      if (col === -1) {
+        const first = columns.find((c) => c.cards.length > 0);
+        if (first) setFocusedKey(first.cards[0]!.key);
+      } else {
+        const next = Math.min(columns[col]!.cards.length - 1, row + 1);
+        setFocusedKey(columns[col]!.cards[next]!.key);
+      }
+    } else if (key.upArrow || input === "k") {
+      if (col === -1) return;
+      const next = Math.max(0, row - 1);
+      setFocusedKey(columns[col]!.cards[next]!.key);
+    } else if (key.rightArrow || input === "l") {
+      const nextCol = col === -1 ? 0 : Math.min(columns.length - 1, col + 1);
+      const target = columns[nextCol]!.cards;
+      if (target.length > 0) {
+        setFocusedKey(target[Math.min(row < 0 ? 0 : row, target.length - 1)]!.key);
+      }
+    } else if (key.leftArrow || input === "h") {
+      const nextCol = col === -1 ? 0 : Math.max(0, col - 1);
+      const target = columns[nextCol]!.cards;
+      if (target.length > 0) {
+        setFocusedKey(target[Math.min(row < 0 ? 0 : row, target.length - 1)]!.key);
+      }
+    } else if (key.escape) {
+      setFocusedKey(null);
+    } else if (input === "q") {
+      process.exit(0);
+    }
+  });
+
   return (
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1} justifyContent="space-between">
         <Text bold color="cyan">ink-kanban-board — Focus Navigation</Text>
         <Text color="gray">
-          ↑↓/jk: navigate • esc: unfocus • q: quit • focused: {focusedKey ?? "none"}
+          ↑↓/jk ←→/hl: navigate • esc: unfocus • q: quit • focused: {focusedKey ?? "none"}
         </Text>
       </Box>
       <KanbanBoard
