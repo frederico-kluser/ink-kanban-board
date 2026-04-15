@@ -2,12 +2,12 @@
 name: component-api
 description: >-
   Define os type contracts e composição dos componentes KanbanBoard, KanbanCard,
-  Panel, Pill, StatCard. Use ao criar/modificar componentes ou tipos.
+  CardDetailModal, Panel, Pill, StatCard. Use ao criar/modificar componentes ou tipos.
   Não use para layout responsivo ou exemplos.
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
   last-reviewed: "2026-04-15"
-paths: "src/*.tsx, src/*.ts, src/ui/*.tsx"
+paths: "src/*.tsx, src/*.ts, src/ui/*.tsx, src/hooks/*.ts"
 ---
 
 # Component API
@@ -96,6 +96,69 @@ type Tone = "neutral" | "accent" | "success" | "warning" | "danger";
 // Mapeamento: neutral→gray, accent→cyan, success→green, warning→yellow, danger→red
 ```
 
+### Modal Section Types
+
+```typescript
+// Union discriminada por `type`
+type ModalSection =
+  | ModalTextSection
+  | ModalChecklistSection
+  | ModalSelectSection
+  | ModalStepsSection;
+
+interface ModalTextSection {
+  type: "text";
+  label: string;
+  value: string;
+  placeholder?: string;
+  onSubmit?: (text: string) => void;  // Quando presente, mostra input field
+}
+
+interface ModalChecklistSection {
+  type: "checklist";
+  label: string;
+  items: ChecklistItem[];             // { key, label, checked }
+  onToggle?: (key: string, checked: boolean) => void;
+}
+
+interface ModalSelectSection {
+  type: "select";
+  label: string;
+  options: SelectOption[];            // { label, value }
+  value?: string;                     // Seleção atual
+  onChange?: (value: string) => void;
+}
+
+interface ModalStepsSection {
+  type: "steps";
+  label: string;
+  steps: StepItem[];                  // { key, label, status: "pending"|"active"|"done"|"error" }
+  onAction?: (key: string) => void;
+}
+```
+
+### CardDetailModalProps
+
+```typescript
+interface CardDetailModalProps {
+  card: KanbanCard;           // Card sendo inspecionado
+  sections: ModalSection[];   // Seções interativas no corpo
+  onClose: () => void;        // Chamado ao pressionar Esc
+  title?: string;             // Override do título (default: card.title)
+}
+```
+
+### CardModalState (retorno de useCardModal)
+
+```typescript
+interface CardModalState {
+  isOpen: boolean;
+  card: KanbanCard | null;
+  open: (card: KanbanCard) => void;
+  close: () => void;
+}
+```
+
 ## Hierarquia de Componentes
 
 ```
@@ -106,9 +169,16 @@ type Tone = "neutral" | "accent" | "success" | "warning" | "danger";
       <KanbanCard>      → src/kanban-card.tsx (tiny ou spacious)
         <Pill>          → src/ui/panel.tsx (label com borda)
         <Spinner>       → @inkjs/ui (quando status.spinning)
+
+<CardDetailModal>       → src/card-detail-modal.tsx (renderiza INSTEAD do board)
+  <TextSectionView>     → (internal) texto + input field
+  <ChecklistSectionView>→ (internal) checkboxes com toggle
+  <SelectSectionView>   → (internal) seleção radio-style
+  <StepsSectionView>    → (internal) pipeline com ←→ navigation
 ```
 
-- `ColumnView` e `ProgressSummary` são componentes internos (não exportados)
+- `ColumnView`, `ProgressSummary` e section views são componentes internos (não exportados)
+- `CardDetailModal` substitui o board (não overlay) — estado do board preservado em React state
 - `Panel`, `StatCard` e `Pill` são exportados como primitivas reutilizáveis
 - `KanbanCard` (componente) é exportado; `KanbanCard` (tipo) é exportado como `KanbanCardData`
 
@@ -116,11 +186,13 @@ type Tone = "neutral" | "accent" | "success" | "warning" | "danger";
 
 O barrel `src/index.ts` exporta exatamente:
 
-- **Componentes**: `KanbanBoard`, `KanbanCard`, `Panel`, `StatCard`, `Pill`
-- **Hooks**: `useTerminalSize`
+- **Componentes**: `KanbanBoard`, `KanbanCard`, `CardDetailModal`, `Panel`, `StatCard`, `Pill`
+- **Hooks**: `useTerminalSize`, `useCardModal`
 - **Types**: `KanbanCardData`, `CardStatus`, `MetadataItem`, `KanbanColumn`,
   `KanbanBoardProps`, `Tone`, `TerminalBreakpoint`, `LayoutDensity`,
-  `TerminalViewport`, `KanbanCardProps`
+  `TerminalViewport`, `ModalSection`, `ModalTextSection`, `ModalChecklistSection`,
+  `ModalSelectSection`, `ModalStepsSection`, `ChecklistItem`, `SelectOption`,
+  `StepItem`, `CardDetailModalProps`, `KanbanCardProps`, `CardModalState`
 
 Ao adicionar um novo export, atualizar `src/index.ts` E o campo `exports`
 em `package.json` se for um novo entrypoint.
@@ -133,3 +205,8 @@ em `package.json` se for um novo entrypoint.
 - `contentLines` só é visível em density `"spacious"` — em `"tiny"` é ignorado
 - Cards com `isPreview: true` usam `borderColor: "gray"` independente do status
 - `maxItemsPerColumn` ativa scroll virtual com `sliceAroundFocus` — não é CSS overflow
+- `CardDetailModal` SUBSTITUI o board (não é overlay) — o board state é preservado
+  em React state e restaurado ao fechar o modal
+- No modal, seções text em modo edit capturam TODAS as teclas — Esc sai do edit mode
+- `ModalSection` é union discriminada pelo campo `type` — pattern matching via switch
+- `useCardModal` é stateless helper — pode ser substituído por useState manual

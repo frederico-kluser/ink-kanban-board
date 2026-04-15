@@ -5,7 +5,7 @@ description: >-
   ink-kanban-board. Use ao criar demos ou modificar o dev workflow.
   Não use para API de componentes ou layout responsivo.
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
   last-reviewed: "2026-04-15"
 paths: "examples/*.tsx, examples/*.ts, package.json"
 ---
@@ -46,6 +46,7 @@ e como criar novos exemplos para o ink-kanban-board.
 | `demo:focus` | `tsx examples/focus-navigation.tsx` | Navegação com teclado + overflow |
 | `demo:pipeline` | `tsx examples/multi-pipeline.tsx` | Pipeline CI/CD com 5 colunas |
 | `demo:logs` | `tsx examples/live-logs.tsx` | contentLines streaming |
+| `demo:modal` | `tsx examples/card-detail-modal.tsx` | Modal interativo com seções |
 
 ## Catálogo de Exemplos
 
@@ -84,6 +85,12 @@ e como criar novos exemplos para o ink-kanban-board.
 - NÃO é um executável, é um módulo de referência
 - Mapeia AgentStatus → KanbanCardData com tipagem exaustiva
 - Demonstra: padrão adapter completo para integração real
+
+### card-detail-modal.tsx — Modal Interativo
+- Abre modal com Enter sobre card focado, fecha com Esc
+- 4 tipos de seção: text (com input), checklist (toggle), select (radio), steps (pipeline)
+- Navegação: ↑↓ entre seções/items, Tab/Shift+Tab jump, ←→ steps, Space toggle
+- Demonstra: CardDetailModal, useCardModal, ModalSection[], useInput com isActive
 
 ## Workflow para Criar um Novo Exemplo
 

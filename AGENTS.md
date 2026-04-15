@@ -24,6 +24,7 @@ npm run demo:hetero      # cards with different content heights
 npm run demo:focus       # keyboard navigation + overflow indicators
 npm run demo:pipeline    # 5-column CI/CD pipeline simulation
 npm run demo:logs        # streaming contentLines (tail -f effect)
+npm run demo:modal       # card detail modal with interactive sections
 ```
 
 ## Conventions
@@ -44,8 +45,10 @@ src/
 ├── types.ts              # All shared type definitions (zero runtime code)
 ├── kanban-board.tsx       # Top-level <KanbanBoard> + internal ColumnView, ProgressSummary
 ├── kanban-card.tsx        # <KanbanCard> with tiny/spacious density modes
+├── card-detail-modal.tsx  # <CardDetailModal> with interactive sections
 ├── hooks/
-│   └── use-terminal-size.ts  # useTerminalSize() → TerminalViewport
+│   ├── use-terminal-size.ts  # useTerminalSize() → TerminalViewport
+│   └── use-card-modal.ts     # useCardModal() → CardModalState
 └── ui/
     └── panel.tsx          # Reusable primitives: Panel, StatCard, Pill
 
@@ -56,6 +59,7 @@ examples/
 ├── focus-navigation.tsx   # Focus tracking + overflow demo
 ├── multi-pipeline.tsx     # 5-column CI/CD pipeline
 ├── live-logs.tsx          # Streaming contentLines
+├── card-detail-modal.tsx  # Interactive modal with text/checklist/select/steps
 └── pi-orq-adapter.ts     # Reference adapter for pi-orq integration
 ```
 
