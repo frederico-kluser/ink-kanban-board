@@ -40,7 +40,7 @@ interface SimulatedTask {
   statusColor: string;
   spinning: boolean;
   logs: string[];
-  startedAt: number;
+  startedAt?: number;
   finishedAt?: number;
 }
 
@@ -54,7 +54,6 @@ function createInitialTasks(): SimulatedTask[] {
     statusColor: "gray",
     spinning: false,
     logs: [],
-    startedAt: Date.now(),
   }));
 }
 
@@ -84,6 +83,7 @@ function DemoApp() {
           task.statusColor = "cyan";
           task.spinning = true;
           task.progress = 0.2;
+          task.startedAt = Date.now();
           task.logs = [`Started at ${new Date().toLocaleTimeString()}`];
         }
 

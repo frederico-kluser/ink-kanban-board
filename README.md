@@ -1,33 +1,6 @@
 # ink-kanban-board
 
-A modular, responsive Kanban board component for [Ink](https://github.com/vadimdemedes/ink) terminal applications.
-
-```
-┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
-│ TODO (3)         │ │ DOING (2)        │ │ DONE (4)         │
-│ ┌──────────────┐ │ │ ┌──────────────┐ │ │ ┌──────────────┐ │
-│ │TASK 01 Pend. │ │ │ │TASK 04 ⠋ Run │ │ │ │TASK 07 Done  │ │
-│ └──────────────┘ │ │ └──────────────┘ │ │ └──────────────┘ │
-│ ┌──────────────┐ │ │ ┌──────────────┐ │ │ ┌──────────────┐ │
-│ │TASK 02 Pend. │ │ │ │TASK 05 ⠋ Run │ │ │ │TASK 08 Done  │ │
-│ └──────────────┘ │ │ └──────────────┘ │ │ └──────────────┘ │
-└──────────────────┘ └──────────────────┘ └──────────────────┘
-[████▒▒····] 4/9 done • 2 active • 3 pending
-```
-
-## Features
-
-- **Responsive layout** — adapts to terminal width (`compact`, `medium`, `wide` breakpoints)
-- **Two density modes** — `tiny` (compact, name-only cards) and `spacious` (extended multi-line cards)
-- **Dynamic content lines** — `contentLines` array lets each card show custom rows in extended mode
-- **Variable card heights** — cards with different `contentLines` lengths render at different sizes
-- **Real-time updates** — all card fields (title, contentLines, status, progress) update live via React state
-- **Focus tracking** — highlight a card and auto-scroll columns to keep it visible
-- **Overflow indicators** — `↑ 3` / `↓ 5` when cards exceed the column limit
-- **Progress bars** — per-card and board-level progress visualization
-- **Spinner support** — animated status indicators for active cards
-- **Any number of columns** — not limited to TODO/DOING/DONE
-- **Zero domain coupling** — generic types, bring your own data model
+A modular, responsive Kanban board component for [Ink](https://github.com/vadimdemedes/ink) terminal applications. Zero domain coupling — bring your own data model and map it to the board's generic interfaces.
 
 ## Installation
 
@@ -35,422 +8,590 @@ A modular, responsive Kanban board component for [Ink](https://github.com/vadimd
 npm install ink-kanban-board
 ```
 
-Peer dependencies:
-
-```bash
-npm install ink react
-```
+**Peer dependencies:** `react >= 18`, `ink >= 5`, `@inkjs/ui >= 2`
 
 ## Quick Start
 
 ```tsx
 import React from "react";
-import { render } from "ink";
-import { KanbanBoard, useTerminalSize, type KanbanColumn } from "ink-kanban-board";
+import { render, Box } from "ink";
+import { KanbanBoard, type KanbanColumn } from "ink-kanban-board";
+
+const columns: KanbanColumn[] = [
+  {
+    key: "todo",
+    title: "TODO",
+    tone: "warning",
+    cards: [
+      { key: "t1", title: "TASK 01", status: { label: "Pending", color: "gray" } },
+      { key: "t2", title: "TASK 02", status: { label: "Pending", color: "gray" } },
+    ],
+  },
+  {
+    key: "doing",
+    title: "DOING",
+    tone: "accent",
+    cards: [
+      { key: "t3", title: "TASK 03", status: { label: "Running", color: "cyan", spinning: true } },
+    ],
+  },
+  {
+    key: "done",
+    title: "DONE",
+    tone: "success",
+    cards: [
+      { key: "t4", title: "TASK 04", status: { label: "Done", color: "green" } },
+    ],
+  },
+];
+
+render(
+  <Box padding={1}>
+    <KanbanBoard columns={columns} density="tiny" />
+  </Box>
+);
+```
+
+The board renders immediately. Every visual aspect — columns, cards, colors, timers — is driven by the data you pass in.
+
+---
+
+## Core Concepts
+
+### Data Model
+
+The board is a pure rendering layer. It receives a `KanbanColumn[]` array and renders it. There is no internal state machine, no drag-and-drop, and no column management. You own the state; the board renders it.
+
+```
+Your domain data  →  adapter function  →  KanbanColumn[]  →  <KanbanBoard />
+```
+
+Each `KanbanColumn` contains an array of `KanbanCardData` objects. Cards carry all the information the board needs to render them — title, status badge, colors, timer timestamps, content lines, etc.
+
+### Density & Breakpoints
+
+The `useTerminalSize()` hook measures the terminal and returns two layout tokens:
+
+| Token | Values | Determines |
+|---|---|---|
+| `breakpoint` | `"compact"` · `"medium"` · `"wide"` | Column direction (`column` vs `row`) |
+| `density` | `"tiny"` · `"spacious"` | Card detail level |
+
+**Thresholds:**
+
+| Terminal size | Breakpoint | Density |
+|---|---|---|
+| < 110 cols | `compact` | `tiny` |
+| 110–149 cols | `medium` | `tiny` |
+| ≥ 150 cols and ≥ 45 rows | `wide` | `spacious` |
+
+```tsx
+import { useTerminalSize } from "ink-kanban-board";
 
 function App() {
   const { breakpoint, density } = useTerminalSize();
-
-  const columns: KanbanColumn[] = [
-    {
-      key: "todo", title: "TODO", tone: "warning",
-      cards: [
-        { key: "t1", title: "TASK 01", status: { label: "Pending", color: "gray" } },
-      ],
-    },
-    {
-      key: "doing", title: "DOING", tone: "accent",
-      cards: [
-        { key: "t2", title: "TASK 02", status: { label: "Running", color: "cyan", spinning: true }, progress: 0.65 },
-      ],
-    },
-    {
-      key: "done", title: "DONE", tone: "success",
-      cards: [
-        { key: "t3", title: "TASK 03", status: { label: "Done", color: "green" } },
-      ],
-    },
-  ];
-
   return <KanbanBoard columns={columns} breakpoint={breakpoint} density={density} />;
 }
-
-render(<App />);
 ```
 
-## Card Content: Compact vs Extended
+In **tiny** density, cards render as compact single-line entries (title + status + timer). In **spacious** density, cards expand to show subtitle, progress bar, metadata, content lines, and full timestamps.
 
-The board has two density modes that control how much information each card displays.
+You can also override these values manually: `density="spacious"` forces extended cards regardless of terminal size.
 
-### Compact mode (`density="tiny"`)
+---
 
-The card **title**, **status badge**, and **time line** are shown. Everything else is hidden. This is ideal for small terminals or high-density boards.
+## Columns
 
-```
-┌─────────────────────┐
-│ TASK 01  Pending     │
-│ 14:30→14:32          │
-└─────────────────────┘
-```
+### Creating Columns
 
-### Extended mode (`density="spacious"`)
-
-Cards show all available fields. The `contentLines` array lets you define custom rows of text — each entry becomes a separate line inside the card. Cards with more lines are taller.
-
-```
-╭─────────────────────────────────╮
-│ ╭──────╮                        │
-│ │TASK 01│          ⠋ Running    │
-│ ╰──────╯                        │
-│ Refactor auth module             │
-│ [████████████··] 85%             │
-│ env: prod • region: us-east-1   │
-│ Step 4/6: Running tests...       │
-│ > docker build -t app:v2.4 .     │  ← contentLines[0]
-│ > kubectl apply -f deploy.yaml   │  ← contentLines[1]
-│ > Waiting for rollout...         │  ← contentLines[2]
-│ 14:30:00 → 14:42:34             │  ← time line (always last)
-╰─────────────────────────────────╯
-```
-
-### Defining content lines
-
-Pass a `contentLines` string array on the card data. Each element renders as a separate text row:
+A column requires four fields:
 
 ```tsx
-const card: KanbanCardData = {
-  key: "deploy-1",
+interface KanbanColumn {
+  key: string;       // unique identifier for React reconciliation
+  title: string;     // header text — card count is appended automatically: "TODO (3)"
+  tone: Tone;        // semantic color for the column border and header
+  cards: KanbanCardData[];
+}
+```
+
+The board supports **any number of columns**, not just three. Here's a 5-column CI/CD pipeline:
+
+```tsx
+const columns: KanbanColumn[] = [
+  { key: "queue",  title: "QUEUE",  tone: "neutral", cards: queueCards },
+  { key: "build",  title: "BUILD",  tone: "warning", cards: buildCards },
+  { key: "test",   title: "TEST",   tone: "accent",  cards: testCards },
+  { key: "deploy", title: "DEPLOY", tone: "danger",  cards: deployCards },
+  { key: "live",   title: "LIVE",   tone: "success", cards: liveCards },
+];
+```
+
+### Column Tones
+
+The `tone` property maps to a fixed color palette used for column borders and headers:
+
+| Tone | Color | Typical use |
+|---|---|---|
+| `"neutral"` | gray | Backlog, archive, inactive |
+| `"accent"` | cyan | In-progress, active |
+| `"success"` | green | Done, deployed, live |
+| `"warning"` | yellow | Pending, queued, attention |
+| `"danger"` | red | Failed, blocked, critical |
+
+Tones affect only the column container (border + title). Individual card colors are controlled independently via `status.color`.
+
+---
+
+## Cards
+
+### Required Fields
+
+Every card must have:
+
+```tsx
+{
+  key: "unique-id",
+  title: "TASK 01",
+  status: {
+    label: "Running",     // text shown in the status badge
+    color: "cyan",        // Ink-compatible color — controls card border color
+    spinning: true,       // optional: renders a spinner next to the label
+  },
+}
+```
+
+### Card Border Color
+
+The card's **border color is determined by `status.color`**. This is the primary mechanism for visual differentiation:
+
+```tsx
+// Normal card — cyan border
+status: { label: "Running", color: "cyan" }
+
+// Error card — red border + red context line
+status: { label: "Error", color: "red" }
+contextLine: "UNIQUE constraint failed: users.email"
+contextIsError: true
+
+// Success card — green border
+status: { label: "Done", color: "green" }
+
+// Warning card — yellow border
+status: { label: "Queued", color: "yellow" }
+```
+
+Any [Ink-compatible color](https://github.com/vadimdemedes/ink#color) is valid: `"red"`, `"green"`, `"cyan"`, `"yellow"`, `"magenta"`, `"gray"`, `"blueBright"`, `"redBright"`, `"white"`, etc.
+
+**Special border overrides:**
+- When `focused === true` → border becomes `cyanBright` with `bold` style
+- When `isPreview === true` → border becomes `gray` (dimmed placeholder)
+
+### Error Cards
+
+To render a card that visually communicates an error:
+
+```tsx
+{
+  key: "failed-task",
+  title: "SEED SCRIPT",
+  status: { label: "Error", color: "red" },
+  contextLine: "UNIQUE constraint failed: users.email",
+  contextIsError: true,    // renders contextLine in red instead of gray
+  contentLines: [
+    "Inserted 1,200 rows into users",
+    "FAILED at row 1,201 — duplicate key",
+  ],
+}
+```
+
+The combination of `color: "red"` (red border) + `contextIsError: true` (red context line) creates a clear error visual.
+
+### Optional Fields
+
+| Field | Type | Density | Description |
+|---|---|---|---|
+| `subtitle` | `string` | spacious | Secondary text below the title |
+| `progress` | `number` (0–1) | spacious | Renders a progress bar: `[████····] 65%` |
+| `metadata` | `MetadataItem[]` | spacious | Dot-separated line: `env: prod • region: us-east-1` |
+| `contextLine` | `string` | spacious | Bottom context/log line |
+| `contextIsError` | `boolean` | spacious | Renders `contextLine` in red |
+| `isPreview` | `boolean` | both | Dims the card (gray border, gray title) |
+| `contentLines` | `string[]` | spacious | Variable-height content rows (see below) |
+| `startedAt` | `number` | both | Timer start epoch — see [Time Tracking](#time-tracking) |
+| `finishedAt` | `number` | both | Timer end epoch — see [Time Tracking](#time-tracking) |
+
+### Content Lines
+
+The `contentLines` array renders additional text rows inside the card in **spacious** density. Each string becomes a separate line. In **tiny** density, content lines are hidden.
+
+```tsx
+{
+  key: "deploy",
   title: "DEPLOY v2.4",
-  subtitle: "Production deployment",
   status: { label: "Running", color: "cyan", spinning: true },
-  progress: 0.65,
   contentLines: [
     "> docker build -t app:v2.4 .",
     "> kubectl apply -f deploy.yaml",
     "> Waiting for rollout...",
   ],
-};
+}
 ```
 
-Cards without `contentLines` (or with an empty array) render normally — this field is fully optional and additive.
+Cards with different-length `contentLines` arrays will have different visual heights. A card with 5 lines will be taller than a card with 2 lines, creating a heterogeneous layout.
+
+---
 
 ## Time Tracking
 
-Every card can display a live timer as its **last row** — visible in both compact and extended modes.
+The board has a built-in timer system controlled by two optional fields on each card: `startedAt` and `finishedAt`.
 
-Set `startedAt` to a `Date.now()` epoch timestamp when the card is created. The timer ticks every second, showing elapsed time. When the work finishes, set `finishedAt` to freeze the display.
+### Timer States
+
+| `startedAt` | `finishedAt` | Card renders |
+|---|---|---|
+| `undefined` | `undefined` | **No time display** — the card shows no timer at all |
+| `Date.now()` | `undefined` | **Live ticking clock** — updates every second |
+| `Date.now()` | `Date.now()` | **Frozen timestamp** — shows start → finish |
+
+The timer is always rendered as the **last row** of the card, in both density modes:
+
+```
+tiny:     14:30→14:37         (HH:MM→HH:MM, no spaces)
+spacious: 14:30:12 → 14:37:05  (HH:MM:SS → HH:MM:SS)
+```
+
+### When to Start the Timer
+
+The board does not manage card lifecycle — **you** decide when to assign `startedAt`. In a standard TODO → DOING → DONE flow:
 
 ```tsx
-// Card with a live ticking timer
-{
+// When creating the card (TODO column):
+// Do NOT set startedAt — the card shows no timer.
+const card = {
   key: "task-1",
-  title: "BUILD",
-  status: { label: "Running", color: "cyan", spinning: true },
-  startedAt: Date.now(),       // timer starts now
-  // finishedAt is absent → time ticks every second
+  title: "TASK 01",
+  status: { label: "Pending", color: "gray" },
+  // startedAt is undefined → no time display
+};
+
+// When the card moves to DOING:
+// Set startedAt to begin the live clock.
+card.startedAt = Date.now();
+card.status = { label: "Running", color: "cyan", spinning: true };
+// The card now shows: 14:30→14:30 (ticking every second)
+
+// When the card moves to DONE:
+// Set finishedAt to freeze the clock.
+card.finishedAt = Date.now();
+card.status = { label: "Done", color: "green" };
+// The card now shows: 14:30→14:37 (frozen)
+```
+
+**Key insight:** cards without `startedAt` show **nothing** in the time row. This is intentional — cards waiting in a backlog or queue don't need elapsed time. The timer only appears once you explicitly set `startedAt`.
+
+### Controlling Which Column Stops the Clock
+
+The board is column-agnostic for timers. It doesn't know which column is "done" — it only reads `startedAt` and `finishedAt` from each card. **Any column can stop the clock** by having the consumer set `finishedAt` when the card enters that column.
+
+```tsx
+// Example: stop the clock when a card enters "REVIEW" (not "DONE")
+function moveToReview(card: KanbanCardData) {
+  card.finishedAt = Date.now();  // clock freezes here
+  card.status = { label: "In Review", color: "magenta" };
 }
 
-// Card with a frozen timer
-{
-  key: "task-2",
-  title: "LINT",
-  status: { label: "Done", color: "green" },
-  startedAt: 1713200000000,    // when it started
-  finishedAt: 1713200045000,   // when it finished — timer freezes
+// Example: 5-column pipeline — clock stops at "LIVE"
+function moveToLive(card: KanbanCardData) {
+  card.finishedAt = Date.now();
+  card.status = { label: "Live", color: "green" };
 }
 ```
 
-Display format:
-- **Compact** (`tiny`): `HH:MM→HH:MM` (e.g. `14:30→14:32`)
-- **Extended** (`spacious`): `HH:MM:SS → HH:MM:SS` (e.g. `14:30:00 → 14:32:15`)
-
-The timer updates automatically for all active cards simultaneously — no extra hooks or intervals needed from the consumer.
-
-## Dynamic Updates
-
-All card fields update in real time via React state. To update a card's title, content lines, status, or any other field, simply update your state — React handles the re-render.
+You can also implement **selective timing** — start the timer in BUILD, stop it in DEPLOY, and leave it stopped through LIVE:
 
 ```tsx
-import React, { useState, useEffect } from "react";
-import { render } from "ink";
-import { KanbanBoard, useTerminalSize, type KanbanColumn } from "ink-kanban-board";
+const stages = {
+  queue:  (card) => { /* no startedAt — no timer */ },
+  build:  (card) => { card.startedAt = Date.now(); },
+  test:   (card) => { /* timer keeps ticking from build */ },
+  deploy: (card) => { card.finishedAt = Date.now(); },
+  live:   (card) => { /* timer stays frozen at deploy time */ },
+};
+```
 
-function LiveApp() {
-  const { breakpoint, density } = useTerminalSize();
-  const [progress, setProgress] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
+### Alternative: Measure Total Lifetime
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress((p) => {
-        const next = Math.min(1, p + 0.1);
-        setLogs((prev) => [...prev.slice(-2), `Processing... ${Math.round(next * 100)}%`]);
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+If you want to track how long a card has existed (from creation, not from "doing"):
 
-  const columns: KanbanColumn[] = [
-    {
-      key: "doing", title: "DOING", tone: "accent",
-      cards: [
-        {
-          key: "task-1",
-          title: `BUILD [${Math.round(progress * 100)}%]`,  // title updates dynamically
-          subtitle: "Compiling source files",
-          status: {
-            label: progress >= 1 ? "Done" : "Building",
-            color: progress >= 1 ? "green" : "cyan",
-            spinning: progress < 1,
-          },
-          progress,
-          contentLines: logs,  // grows over time → card height increases
-        },
-      ],
-    },
+```tsx
+// Set startedAt at creation — timer runs from the start
+const card = {
+  key: "task-1",
+  title: "TASK 01",
+  status: { label: "Pending", color: "gray" },
+  startedAt: Date.now(),  // timer starts immediately
+};
+```
+
+The choice is yours. The board renders whatever timestamps you provide.
+
+---
+
+## Focus & Navigation
+
+### Focused Card
+
+Pass `focusedCardKey` to highlight a specific card:
+
+```tsx
+<KanbanBoard
+  columns={columns}
+  focusedCardKey="task-3"  // this card gets a cyanBright bold border
+/>
+```
+
+The focused card receives:
+- `borderStyle: "bold"` (thicker border)
+- `borderColor: "cyanBright"` (bright cyan, overriding `status.color`)
+
+### Overflow & Scroll-into-View
+
+When a column has more cards than `maxItemsPerColumn` (default: 5), hidden cards are indicated with `↑ N` / `↓ N` markers. If the focused card is outside the visible window, the view auto-scrolls to keep it centered.
+
+```tsx
+<KanbanBoard
+  columns={columns}
+  focusedCardKey={focusedKey}
+  maxItemsPerColumn={4}  // show at most 4 cards per column
+/>
+```
+
+### Keyboard Navigation
+
+The board does **not** handle keyboard input — that's the consumer's responsibility via Ink's `useInput`. Here's a standard 2D navigation pattern (↑↓ within column, ←→ across columns):
+
+```tsx
+import { useInput } from "ink";
+
+useInput((input, key) => {
+  // Find current (col, row) from focusedKey
+  let col = -1, row = -1;
+  for (let c = 0; c < columns.length; c++) {
+    const r = columns[c].cards.findIndex((card) => card.key === focusedKey);
+    if (r !== -1) { col = c; row = r; break; }
+  }
+
+  if (key.downArrow || input === "j") {
+    // Move down within column
+    if (col >= 0) {
+      const next = Math.min(columns[col].cards.length - 1, row + 1);
+      setFocusedKey(columns[col].cards[next].key);
+    }
+  } else if (key.upArrow || input === "k") {
+    // Move up within column
+    if (col >= 0) {
+      const next = Math.max(0, row - 1);
+      setFocusedKey(columns[col].cards[next].key);
+    }
+  } else if (key.rightArrow || input === "l") {
+    // Move to next column, preserving row position
+    const nextCol = Math.min(columns.length - 1, col + 1);
+    const target = columns[nextCol].cards;
+    if (target.length > 0) {
+      setFocusedKey(target[Math.min(row, target.length - 1)].key);
+    }
+  } else if (key.leftArrow || input === "h") {
+    // Move to previous column, preserving row position
+    const nextCol = Math.max(0, col - 1);
+    const target = columns[nextCol].cards;
+    if (target.length > 0) {
+      setFocusedKey(target[Math.min(row, target.length - 1)].key);
+    }
+  }
+});
+```
+
+---
+
+## Progress Bar
+
+When `showProgress` is `true` (the default), a progress summary bar renders above the columns:
+
+```
+[████▒▒····] 3/10 done • 2 active • 5 pending
+```
+
+The bar uses a convention:
+- **Last column** → "done" count (filled `█`)
+- **Middle columns** (all except first and last) → "active" count (half-fill `▒`)
+- **First column** → "pending" count (empty `·`)
+
+In tiny density, the bar is condensed: `[████▒▒····] 3/10`
+
+To hide it: `<KanbanBoard columns={columns} showProgress={false} />`
+
+---
+
+## Adapting Domain Data
+
+The board is intentionally decoupled from any domain. Use an adapter function to map your data:
+
+```tsx
+import type { KanbanCardData, KanbanColumn } from "ink-kanban-board";
+
+// Your domain type
+interface PipelineJob {
+  id: string;
+  name: string;
+  stage: "queued" | "running" | "passed" | "failed";
+  startTime?: Date;
+  endTime?: Date;
+  logs: string[];
+}
+
+// Adapter: PipelineJob → KanbanCardData
+function toCard(job: PipelineJob): KanbanCardData {
+  const statusMap = {
+    queued:  { label: "Queued",  color: "gray" },
+    running: { label: "Running", color: "cyan", spinning: true },
+    passed:  { label: "Passed",  color: "green" },
+    failed:  { label: "Failed",  color: "red" },
+  };
+
+  return {
+    key: job.id,
+    title: job.name.toUpperCase(),
+    subtitle: job.name,
+    status: statusMap[job.stage],
+    startedAt: job.startTime?.getTime(),
+    finishedAt: job.endTime?.getTime(),
+    contentLines: job.logs.slice(-3),
+    contextLine: job.stage === "failed" ? job.logs.at(-1) : undefined,
+    contextIsError: job.stage === "failed",
+  };
+}
+
+// Build columns from grouped jobs
+function buildColumns(jobs: PipelineJob[]): KanbanColumn[] {
+  return [
+    { key: "queued",  title: "QUEUED",  tone: "warning", cards: jobs.filter(j => j.stage === "queued").map(toCard) },
+    { key: "running", title: "RUNNING", tone: "accent",  cards: jobs.filter(j => j.stage === "running").map(toCard) },
+    { key: "passed",  title: "PASSED",  tone: "success", cards: jobs.filter(j => j.stage === "passed").map(toCard) },
+    { key: "failed",  title: "FAILED",  tone: "danger",  cards: jobs.filter(j => j.stage === "failed").map(toCard) },
   ];
-
-  return <KanbanBoard columns={columns} breakpoint={breakpoint} density={density} />;
 }
-
-render(<LiveApp />);
 ```
 
-Key points:
-- **Title** can change every render (e.g., append a percentage)
-- **`contentLines`** can grow, shrink, or replace entries — the card resizes automatically
-- **Status**, **progress**, **metadata** — all fields are reactive
-- No special API needed — standard React `useState` / `useEffect` patterns work
-
-## Cards with Different Sizes
-
-Each card can have a different number of `contentLines`, producing cards of different visual heights within the same column. This is useful when cards represent heterogeneous work items:
-
-```tsx
-const columns: KanbanColumn[] = [
-  {
-    key: "tasks", title: "TASKS", tone: "accent",
-    cards: [
-      {
-        key: "minimal",
-        title: "LINT FIX",
-        status: { label: "Done", color: "green" },
-        // No contentLines — smallest card
-      },
-      {
-        key: "medium",
-        title: "DB MIGRATION",
-        subtitle: "migrate_v41.sql",
-        status: { label: "Done", color: "green" },
-        contentLines: [
-          "ALTER TABLE users ADD INDEX idx_email;",
-          "ALTER TABLE orders ADD INDEX idx_created;",
-        ],
-      },
-      {
-        key: "large",
-        title: "DATA SYNC",
-        subtitle: "Syncing warehouse tables",
-        status: { label: "Streaming", color: "cyan", spinning: true },
-        progress: 0.32,
-        contentLines: [
-          "users       ████████░░░░ 67%",
-          "orders      ████░░░░░░░░ 33%",
-          "products    ██░░░░░░░░░░ 18%",
-          "analytics   ░░░░░░░░░░░░  2%",
-          "sessions    — pending",
-        ],
-      },
-    ],
-  },
-];
-```
-
-See [`examples/heterogeneous-cards.tsx`](examples/heterogeneous-cards.tsx) for a full runnable example.
+---
 
 ## API Reference
 
-### `<KanbanBoard>`
-
-The main board component.
+### `<KanbanBoard />` Props
 
 | Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `columns` | `KanbanColumn[]` | *required* | Array of columns to render |
+|---|---|---|---|
+| `columns` | `KanbanColumn[]` | *required* | Columns to render |
 | `focusedCardKey` | `string \| null` | `null` | Key of the focused card |
-| `breakpoint` | `TerminalBreakpoint` | `"medium"` | Layout breakpoint (`compact`, `medium`, `wide`) |
-| `density` | `LayoutDensity` | `"tiny"` | Card detail level (`tiny`, `spacious`) |
+| `breakpoint` | `"compact" \| "medium" \| "wide"` | `"medium"` | Column layout direction |
+| `density` | `"tiny" \| "spacious"` | `"tiny"` | Card detail level |
 | `maxItemsPerColumn` | `number` | `5` | Max visible cards before overflow indicators |
-| `showProgress` | `boolean` | `true` | Show the progress summary bar |
+| `showProgress` | `boolean` | `true` | Show progress summary bar |
 
-### `<KanbanCard>`
+### `KanbanCardData`
 
-Individual card component (used internally, but exported for custom layouts).
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `key` | `string` | yes | Unique identifier |
+| `title` | `string` | yes | Card header label |
+| `status` | `CardStatus` | yes | Status badge (label + color + spinning) |
+| `subtitle` | `string` | no | Secondary text (spacious only) |
+| `progress` | `number` (0–1) | no | Progress bar value (spacious only) |
+| `metadata` | `MetadataItem[]` | no | Dot-separated metadata line (spacious only) |
+| `contextLine` | `string` | no | Bottom context line (spacious only) |
+| `contextIsError` | `boolean` | no | Render context line in red |
+| `isPreview` | `boolean` | no | Dim the card as a placeholder |
+| `contentLines` | `string[]` | no | Variable-height content rows (spacious only) |
+| `startedAt` | `number` | no | Timer start — epoch ms |
+| `finishedAt` | `number` | no | Timer end — epoch ms |
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `card` | `KanbanCardData` | *required* | Card data object |
-| `focused` | `boolean` | `false` | Whether this card is focused |
-| `density` | `LayoutDensity` | `"tiny"` | Layout density |
+### `CardStatus`
 
-### `<Panel>`
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `label` | `string` | yes | Badge text ("Running", "Done", "Error") |
+| `color` | `string` | yes | Ink color — also controls card border color |
+| `spinning` | `boolean` | no | Show a spinner next to the label |
 
-A bordered container with title and optional footer.
+### `MetadataItem`
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `title` | `string` | — | Panel header text |
-| `subtitle` | `string` | — | Secondary text (hidden in tiny density) |
-| `tone` | `Tone` | `"neutral"` | Border color tone |
-| `footer` | `ReactNode` | — | Footer content (hidden in tiny density) |
-| `density` | `LayoutDensity` | `"tiny"` | Layout density |
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `label` | `string` | yes | Display text |
+| `color` | `string` | no | Ink color override (default: `"gray"`) |
+| `dim` | `boolean` | no | Render with dimColor |
 
-### `<Pill>`
+### `KanbanColumn`
 
-An inline label badge.
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `key` | `string` | yes | Unique identifier |
+| `title` | `string` | yes | Column header (count appended: "TODO (3)") |
+| `tone` | `Tone` | yes | Border/header color: `"neutral"` · `"accent"` · `"success"` · `"warning"` · `"danger"` |
+| `cards` | `KanbanCardData[]` | yes | Cards in this column |
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `label` | `string` | *required* | Badge text |
-| `tone` | `Tone` | `"neutral"` | Color tone |
-| `strong` | `boolean` | `false` | Bold text |
-| `density` | `LayoutDensity` | `"tiny"` | Layout density |
+### `Tone`
 
-### `<StatCard>`
+`"neutral"` | `"accent"` | `"success"` | `"warning"` | `"danger"`
 
-A card for displaying a single stat with label and value.
+### `TerminalBreakpoint`
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `label` | `string` | *required* | Stat label |
-| `value` | `string` | *required* | Stat value |
-| `detail` | `string` | — | Additional detail text |
-| `tone` | `Tone` | `"neutral"` | Color tone |
-| `density` | `LayoutDensity` | `"tiny"` | Layout density |
+`"compact"` | `"medium"` | `"wide"`
+
+### `LayoutDensity`
+
+`"tiny"` | `"spacious"`
 
 ### `useTerminalSize()`
-
-Hook that tracks terminal dimensions and derives responsive breakpoints.
-
-```tsx
-const { width, height, breakpoint, density, isShort } = useTerminalSize();
-```
 
 Returns `TerminalViewport`:
 
 | Field | Type | Description |
-|-------|------|-------------|
+|---|---|---|
 | `width` | `number` | Terminal columns |
 | `height` | `number` | Terminal rows |
-| `breakpoint` | `TerminalBreakpoint` | `compact` (<110), `medium` (110–149), `wide` (≥150) |
-| `density` | `LayoutDensity` | `spacious` (≥150×45) or `tiny` (everything else) |
+| `breakpoint` | `TerminalBreakpoint` | Derived from width |
+| `density` | `LayoutDensity` | Derived from width × height |
 | `isShort` | `boolean` | `true` when height < 34 |
 
-## Types
+### Exported Components
 
-### `KanbanCardData`
+| Export | Description |
+|---|---|
+| `KanbanBoard` | Main board component |
+| `KanbanCard` | Individual card (used internally, exported for advanced layouts) |
+| `Panel` | Bordered container with tone coloring |
+| `StatCard` | Label + value display card |
+| `Pill` | Colored label badge |
+| `useTerminalSize` | Terminal measurement hook |
 
-```typescript
-interface KanbanCardData {
-  key: string;              // Unique key for React
-  title: string;            // Card header — only field shown in compact mode
-  subtitle?: string;        // Secondary text (spacious only)
-  status: CardStatus;       // Status badge (shown in both modes)
-  progress?: number;        // 0–1, renders progress bar (spacious only)
-  metadata?: MetadataItem[];// Dot-separated info line (spacious only)
-  contextLine?: string;     // Bottom log/error line (spacious only)
-  contextIsError?: boolean; // Renders contextLine in red
-  isPreview?: boolean;      // Dimmed placeholder styling
-  contentLines?: string[];  // Custom text rows (spacious only) — variable card height
-  startedAt?: number;       // Epoch ms — enables time line (both modes)
-  finishedAt?: number;      // Epoch ms — freezes the timer when set
-}
-```
-
-### `CardStatus`
-
-```typescript
-interface CardStatus {
-  label: string;      // e.g. "Running", "Done"
-  color: string;      // Ink color name
-  spinning?: boolean; // Show spinner animation
-}
-```
-
-### `MetadataItem`
-
-```typescript
-interface MetadataItem {
-  label: string;    // Display text
-  color?: string;   // Optional color override (default: "gray")
-  dim?: boolean;    // Render with dimColor
-}
-```
-
-### `KanbanColumn`
-
-```typescript
-interface KanbanColumn {
-  key: string;           // Unique key for React
-  title: string;         // Column header (count is appended automatically)
-  tone: Tone;            // Border color tone
-  cards: KanbanCardData[];
-}
-```
-
-### `Tone`
-
-```typescript
-type Tone = "neutral" | "accent" | "success" | "warning" | "danger";
-```
-
-## Density & Breakpoint System
-
-The board automatically adapts to terminal size:
-
-| Terminal Size | Breakpoint | Density | Behavior |
-|--------------|------------|---------|----------|
-| < 110 cols | `compact` | `tiny` | Columns stacked vertically, name-only cards |
-| 110–149 cols | `medium` | `tiny` | Columns side-by-side, name-only cards |
-| ≥ 150 cols, < 45 rows | `wide` | `tiny` | Wide layout, name-only cards |
-| ≥ 150 cols, ≥ 45 rows | `wide` | `spacious` | Full detail: contentLines, progress bars, metadata |
-
-Use `useTerminalSize()` to get the current breakpoint and density, then pass them to `<KanbanBoard>`. You can also override `density` manually to force a specific mode.
-
-## Adapting from Your Domain Types
-
-The package ships with no domain-specific types. Provide a function that maps your data to `KanbanColumn[]`:
-
-```tsx
-function myDataToColumns(tasks: MyTask[]): KanbanColumn[] {
-  return [
-    { key: "todo", title: "TODO", tone: "warning", cards: tasks.filter(t => t.state === "pending").map(taskToCard) },
-    { key: "doing", title: "DOING", tone: "accent", cards: tasks.filter(t => t.state === "running").map(taskToCard) },
-    { key: "done", title: "DONE", tone: "success", cards: tasks.filter(t => t.state === "done").map(taskToCard) },
-  ];
-}
-
-function taskToCard(task: MyTask): KanbanCardData {
-  return {
-    key: task.id,
-    title: task.name,
-    subtitle: task.description,
-    status: { label: task.state, color: task.state === "running" ? "cyan" : "gray" },
-    contentLines: task.logs,  // pass any string[] for extended detail rows
-  };
-}
-```
-
-See [`examples/pi-orq-adapter.ts`](examples/pi-orq-adapter.ts) for a complete real-world adapter mapping pi-orq's `AgentStatus` objects.
+---
 
 ## Examples
 
-| Example | Command | Description |
-|---------|---------|-------------|
-| [Interactive demo](examples/demo.tsx) | `npm run dev` | Simulated tasks with dynamic titles, live contentLines, and progress |
-| [Heterogeneous cards](examples/heterogeneous-cards.tsx) | `npm run demo:hetero` | Cards with different sizes, field combinations, and content line counts |
-| [pi-orq adapter](examples/pi-orq-adapter.ts) | — | Reference adapter mapping domain types to KanbanColumn[] |
+Run any example with the corresponding script:
+
+| Script | Description |
+|---|---|
+| `npm run dev` | Interactive demo — tasks move through TODO → DOING → DONE |
+| `npm run demo:sim` | Same as `dev` (alias) |
+| `npm run demo:minimal` | Static board, no state — minimal quick start |
+| `npm run demo:hetero` | Cards with different content sizes (spacious mode) |
+| `npm run demo:focus` | Keyboard focus navigation with overflow indicators |
+| `npm run demo:pipeline` | 5-column CI/CD pipeline with animated progression |
+| `npm run demo:logs` | Streaming `contentLines` — live tail effect |
+
+---
 
 ## License
 
