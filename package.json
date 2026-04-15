@@ -19,7 +19,12 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx examples/demo.tsx",
+    "demo:sim": "tsx examples/demo.tsx",
     "demo:hetero": "tsx examples/heterogeneous-cards.tsx",
+    "demo:minimal": "tsx examples/minimal.tsx",
+    "demo:focus": "tsx examples/focus-navigation.tsx",
+    "demo:pipeline": "tsx examples/multi-pipeline.tsx",
+    "demo:logs": "tsx examples/live-logs.tsx",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
