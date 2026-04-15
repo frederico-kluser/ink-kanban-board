@@ -340,11 +340,11 @@ The choice is yours. The board renders whatever timestamps you provide.
 
 ## Card Detail Modal
 
-Press **Enter** on a focused card to open an interactive modal. The modal **replaces** the board view — the board state is preserved in React state and restores when the modal closes. This ensures a clean, readable modal without transparency artifacts.
+The `CardDetailModal` component renders an interactive detail view for a single card. It **replaces** the board view — the board state is preserved in React state and restores when the modal closes. This ensures a clean, readable modal without transparency artifacts.
 
 ### Opening a Modal
 
-Use the `useCardModal` hook to manage modal state, and conditionally render the modal **instead of** the board:
+Use the `useCardModal` hook to manage modal state, and conditionally render the modal **instead of** the board. The consumer is responsible for triggering `open()` — typically on **Enter** key in the `useInput` handler (see [Keyboard Navigation](#keyboard-navigation) for the full pattern).
 
 ```tsx
 import {
@@ -353,20 +353,14 @@ import {
   useCardModal,
   type ModalSection,
 } from "ink-kanban-board";
-import { useInput } from "ink";
 
 function App() {
   const [focusedKey, setFocusedKey] = useState<string | null>("task-1");
   const { isOpen, card, open, close } = useCardModal();
 
-  // Disable board navigation while modal is open
-  useInput((input, key) => {
-    // ... arrow key navigation ...
-    if (key.return && focusedKey) {
-      const cardData = findCard(focusedKey);
-      if (cardData) open(cardData);
-    }
-  }, { isActive: !isOpen });
+  // Keyboard input — see "Keyboard Navigation" section for the full useInput example.
+  // The key integration point: call open(cardData) on Enter, and pass
+  // { isActive: !isOpen } to disable board navigation while the modal is open.
 
   const sections: ModalSection[] = [
     { type: "text",      label: "Notes",     value: notes, onSubmit: addNote },
@@ -523,10 +517,13 @@ When a column has more cards than `maxItemsPerColumn` (default: 5), hidden cards
 
 ### Keyboard Navigation
 
-The board does **not** handle keyboard input — that's the consumer's responsibility via Ink's `useInput`. Here's a standard 2D navigation pattern (↑↓ within column, ←→ across columns):
+The board does **not** handle keyboard input — that's the consumer's responsibility via Ink's `useInput`. Here's the complete keyboard pattern including 2D navigation, modal opening, unfocus, and quit:
 
 ```tsx
 import { useInput } from "ink";
+import { useCardModal } from "ink-kanban-board";
+
+const { isOpen, card, open, close } = useCardModal();
 
 useInput((input, key) => {
   // Find current (col, row) from focusedKey
@@ -562,9 +559,19 @@ useInput((input, key) => {
     if (target.length > 0) {
       setFocusedKey(target[Math.min(row, target.length - 1)].key);
     }
+  } else if (key.return && focusedKey) {
+    // Open card detail modal (see Card Detail Modal section)
+    const cardData = columns[col]?.cards[row];
+    if (cardData) open(cardData);
+  } else if (key.escape) {
+    setFocusedKey(null);
+  } else if (input === "q") {
+    process.exit(0);
   }
-});
+}, { isActive: !isOpen });  // disable board navigation while modal is open
 ```
+
+> **Note:** The `{ isActive: !isOpen }` option disables board navigation while the modal is open. The modal handles its own keyboard input internally. See [Card Detail Modal](#card-detail-modal) for the full integration pattern.
 
 ---
 
