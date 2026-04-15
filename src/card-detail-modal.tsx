@@ -18,11 +18,12 @@ import type {
  * state is preserved in React state while the modal is displayed.
  *
  * Navigation:
- * - **Tab / Shift+Tab** — move between sections
- * - **↑↓** — navigate items within checklist / select sections
+ * - **↑↓** — navigate between sections (or items within checklist/select)
  * - **←→** — navigate steps in a steps section
- * - **Space / Enter** — toggle checkbox or select option
- * - **Esc** — close the modal
+ * - **Tab / Shift+Tab** — jump between sections
+ * - **Enter** — enter edit mode (text) / toggle (checklist) / select (select)
+ * - **Space** — toggle checkbox (checklist)
+ * - **Esc** — exit edit mode (text) or close the modal
  *
  * @example
  * ```tsx
@@ -48,6 +49,7 @@ export function CardDetailModal({
   const [activeIdx, setActiveIdx] = useState(0);
   const [cursors, setCursors] = useState<number[]>(() => sections.map(() => 0));
   const [textBuffer, setTextBuffer] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   const updateCursor = useCallback(
     (sectionIdx: number, value: number) => {
@@ -60,12 +62,58 @@ export function CardDetailModal({
     [],
   );
 
+  const goToSection = useCallback(
+    (direction: "up" | "down") => {
+      setActiveIdx((prev) => {
+        if (direction === "up") return Math.max(0, prev - 1);
+        return Math.min(sections.length - 1, prev + 1);
+      });
+      setTextBuffer("");
+      setIsEditing(false);
+    },
+    [sections.length],
+  );
+
   useInput((input: string, key: Key) => {
+    const section = sections[activeIdx];
+    if (!section) return;
+    const cursor = cursors[activeIdx] ?? 0;
+
+    // ── Text editing mode: captures all input ──
+    if (isEditing && section.type === "text") {
+      if (key.escape) {
+        setIsEditing(false);
+        return;
+      }
+      if (!section.onSubmit) return;
+      if (key.return) {
+        if (textBuffer.trim()) {
+          section.onSubmit(textBuffer);
+          setTextBuffer("");
+        }
+        return;
+      }
+      if (key.backspace || key.delete) {
+        setTextBuffer((prev) => prev.slice(0, -1));
+        return;
+      }
+      const isSpecial =
+        key.upArrow || key.downArrow || key.leftArrow || key.rightArrow ||
+        key.tab;
+      if (input && !isSpecial) {
+        setTextBuffer((prev) => prev + input);
+      }
+      return;
+    }
+
+    // ── Normal modal navigation ──
+
     if (key.escape) {
       onClose();
       return;
     }
 
+    // Tab / Shift+Tab: jump between sections
     if (key.tab) {
       setActiveIdx((prev) =>
         key.shift
@@ -76,38 +124,21 @@ export function CardDetailModal({
       return;
     }
 
-    const section = sections[activeIdx];
-    if (!section) return;
-    const cursor = cursors[activeIdx] ?? 0;
-
     switch (section.type) {
       case "text": {
-        if (!section.onSubmit) return;
-        if (key.return) {
-          if (textBuffer.trim()) {
-            section.onSubmit(textBuffer);
-            setTextBuffer("");
-          }
-          return;
-        }
-        if (key.backspace || key.delete) {
-          setTextBuffer((prev) => prev.slice(0, -1));
-          return;
-        }
-        const isSpecial =
-          key.upArrow || key.downArrow || key.leftArrow || key.rightArrow ||
-          key.escape || key.tab;
-        if (input && !isSpecial) {
-          setTextBuffer((prev) => prev + input);
-        }
+        if (key.upArrow) { goToSection("up"); }
+        else if (key.downArrow) { goToSection("down"); }
+        else if (key.return && section.onSubmit) { setIsEditing(true); }
         break;
       }
 
       case "checklist": {
         if (key.upArrow) {
-          updateCursor(activeIdx, Math.max(0, cursor - 1));
+          if (cursor <= 0) goToSection("up");
+          else updateCursor(activeIdx, cursor - 1);
         } else if (key.downArrow) {
-          updateCursor(activeIdx, Math.min(section.items.length - 1, cursor + 1));
+          if (cursor >= section.items.length - 1) goToSection("down");
+          else updateCursor(activeIdx, cursor + 1);
         } else if (input === " " || key.return) {
           const item = section.items[cursor];
           if (item && section.onToggle) {
@@ -119,9 +150,11 @@ export function CardDetailModal({
 
       case "select": {
         if (key.upArrow) {
-          updateCursor(activeIdx, Math.max(0, cursor - 1));
+          if (cursor <= 0) goToSection("up");
+          else updateCursor(activeIdx, cursor - 1);
         } else if (key.downArrow) {
-          updateCursor(activeIdx, Math.min(section.options.length - 1, cursor + 1));
+          if (cursor >= section.options.length - 1) goToSection("down");
+          else updateCursor(activeIdx, cursor + 1);
         } else if (key.return) {
           const opt = section.options[cursor];
           if (opt && section.onChange) {
@@ -132,7 +165,9 @@ export function CardDetailModal({
       }
 
       case "steps": {
-        if (key.leftArrow) {
+        if (key.upArrow) { goToSection("up"); }
+        else if (key.downArrow) { goToSection("down"); }
+        else if (key.leftArrow) {
           updateCursor(activeIdx, Math.max(0, cursor - 1));
         } else if (key.rightArrow) {
           updateCursor(activeIdx, Math.min(section.steps.length - 1, cursor + 1));
@@ -146,6 +181,10 @@ export function CardDetailModal({
       }
     }
   });
+
+  // ── Contextual help text ──
+  const activeSection = sections[activeIdx];
+  const helpText = buildHelpText(activeSection, isEditing);
 
   return (
     <Box
@@ -162,7 +201,7 @@ export function CardDetailModal({
         <Text bold color="cyanBright">
           {title ?? card.title}
         </Text>
-        <Text color="gray">[Esc] Close</Text>
+        <Text color="gray">[Esc] {isEditing ? "Stop editing" : "Close"}</Text>
       </Box>
 
       {/* Card summary */}
@@ -182,20 +221,48 @@ export function CardDetailModal({
             key={`${section.type}-${i}`}
             section={section}
             active={i === activeIdx}
+            editing={i === activeIdx && isEditing}
             cursor={cursors[i] ?? 0}
             textBuffer={i === activeIdx ? textBuffer : ""}
           />
         ))}
       </Box>
 
-      {/* Footer */}
-      <Box marginTop={1}>
+      {/* Footer — contextual shortcuts */}
+      <Box marginTop={1} flexDirection="column">
+        <Text color="yellow" dimColor>
+          {helpText}
+        </Text>
         <Text color="gray" dimColor>
-          Tab: sections • ↑↓: items • Space: toggle • Enter: select/submit • Esc: close
+          Section {activeIdx + 1}/{sections.length}
+          {activeSection ? ` — ${activeSection.label}` : ""}
         </Text>
       </Box>
     </Box>
   );
+}
+
+// ── Help text builder ──────────────────────────────────────
+
+function buildHelpText(section: ModalSection | undefined, isEditing: boolean): string {
+  if (!section) return "Esc: close";
+
+  if (isEditing && section.type === "text") {
+    return "Type to write • Enter: submit • Backspace: delete • Esc: stop editing";
+  }
+
+  switch (section.type) {
+    case "text":
+      return section.onSubmit
+        ? "Enter: start typing • ↑↓: sections • Tab: jump section • Esc: close"
+        : "↑↓: sections • Tab: jump section • Esc: close";
+    case "checklist":
+      return "↑↓: items (overflow → next section) • Space/Enter: toggle • Esc: close";
+    case "select":
+      return "↑↓: options (overflow → next section) • Enter: select • Esc: close";
+    case "steps":
+      return "←→: steps • Enter: action • ↑↓: sections • Esc: close";
+  }
 }
 
 // ── Section Renderers ──────────────────────────────────────
@@ -203,14 +270,15 @@ export function CardDetailModal({
 interface SectionRendererProps {
   section: ModalSection;
   active: boolean;
+  editing: boolean;
   cursor: number;
   textBuffer: string;
 }
 
-function SectionRenderer({ section, active, cursor, textBuffer }: SectionRendererProps) {
+function SectionRenderer({ section, active, editing, cursor, textBuffer }: SectionRendererProps) {
   switch (section.type) {
     case "text":
-      return <TextSectionView section={section} active={active} textBuffer={textBuffer} />;
+      return <TextSectionView section={section} active={active} editing={editing} textBuffer={textBuffer} />;
     case "checklist":
       return <ChecklistSectionView section={section} active={active} cursor={cursor} />;
     case "select":
@@ -225,10 +293,12 @@ function SectionRenderer({ section, active, cursor, textBuffer }: SectionRendere
 function TextSectionView({
   section,
   active,
+  editing,
   textBuffer,
 }: {
   section: ModalTextSection;
   active: boolean;
+  editing: boolean;
   textBuffer: string;
 }) {
   const borderColor = active ? "cyanBright" : "gray";
@@ -243,6 +313,7 @@ function TextSectionView({
     >
       <Text bold color={borderColor}>
         {section.label}
+        {editing && <Text color="yellow"> (editing)</Text>}
       </Text>
       {lines.length > 0 && (
         <Box flexDirection="column">
@@ -253,7 +324,7 @@ function TextSectionView({
           ))}
         </Box>
       )}
-      {section.onSubmit && active && (
+      {section.onSubmit && editing && (
         <Box>
           <Text color="cyan">❯ </Text>
           <Text color="white">{textBuffer}</Text>
@@ -264,9 +335,9 @@ function TextSectionView({
           </Text>
         </Box>
       )}
-      {section.onSubmit && !active && (
+      {section.onSubmit && active && !editing && (
         <Text color="gray" dimColor>
-          (focus to type)
+          Press Enter to start typing
         </Text>
       )}
     </Box>
@@ -407,11 +478,6 @@ function StepsSectionView({
           );
         })}
       </Box>
-      {active && section.onAction && (
-        <Text color="gray" dimColor>
-          ←→: navigate steps • Enter: trigger action
-        </Text>
-      )}
     </Box>
   );
 }

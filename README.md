@@ -481,15 +481,14 @@ Navigate steps with **←→**, trigger actions with **Enter**. Status icons: �
 
 | Key | Action |
 |---|---|
-| **Tab** | Focus next section |
-| **Shift+Tab** | Focus previous section |
-| **↑↓** | Navigate items (checklist, select) |
+| **↑↓** | Navigate between sections (or items within checklist/select — overflows to next section) |
 | **←→** | Navigate steps (steps section) |
+| **Tab / Shift+Tab** | Jump between sections |
+| **Enter** | Start editing (text) / toggle (checklist) / select option / trigger step action |
 | **Space** | Toggle checkbox (checklist) |
-| **Enter** | Select option / submit text / trigger step action |
-| **Esc** | Close the modal |
+| **Esc** | Exit edit mode (text input) or close the modal |
 
-The active section is highlighted with a bright cyan border. Inactive sections are dimmed.
+When editing a **text section**, all keys are captured for typing. Press **Esc** to stop editing and return to section navigation. The footer always shows context-sensitive shortcut hints.
 
 ---
 
