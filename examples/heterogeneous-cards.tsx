@@ -25,6 +25,7 @@ const columns: KanbanColumn[] = [
         key: "minimal",
         title: "MINIMAL",
         status: { label: "Idle", color: "gray" },
+        startedAt: Date.now() - 120_000,
         // No subtitle, no contentLines — smallest card
       },
       {
@@ -32,6 +33,7 @@ const columns: KanbanColumn[] = [
         title: "WITH SUBTITLE",
         subtitle: "This card has a subtitle only",
         status: { label: "Queued", color: "yellow" },
+        startedAt: Date.now() - 90_000,
       },
     ],
   },
@@ -57,6 +59,7 @@ const columns: KanbanColumn[] = [
           "> kubectl apply -f deploy.yaml",
           "> Waiting for rollout...",
         ],
+        startedAt: Date.now() - 754_000,
       },
       {
         key: "logs-card",
@@ -71,6 +74,7 @@ const columns: KanbanColumn[] = [
           "analytics   ░░░░░░░░░░░░  2%",
           "sessions    — pending",
         ],
+        startedAt: Date.now() - 312_000,
       },
     ],
   },
@@ -84,6 +88,8 @@ const columns: KanbanColumn[] = [
         title: "LINT FIX",
         status: { label: "Done", color: "green" },
         metadata: [{ label: "3 files" }, { label: "0.4s" }],
+        startedAt: Date.now() - 60_000,
+        finishedAt: Date.now() - 59_600,
       },
       {
         key: "done-detailed",
@@ -99,6 +105,8 @@ const columns: KanbanColumn[] = [
           "ALTER TABLE users ADD INDEX idx_email;",
           "ALTER TABLE orders ADD INDEX idx_created;",
         ],
+        startedAt: Date.now() - 180_000,
+        finishedAt: Date.now() - 177_900,
       },
       {
         key: "done-error",
@@ -111,6 +119,8 @@ const columns: KanbanColumn[] = [
           "Inserted 8,400 rows into orders",
           "FAILED at row 1,201 — duplicate key",
         ],
+        startedAt: Date.now() - 45_000,
+        finishedAt: Date.now() - 12_000,
       },
     ],
   },

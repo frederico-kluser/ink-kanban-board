@@ -84,11 +84,12 @@ The board has two density modes that control how much information each card disp
 
 ### Compact mode (`density="tiny"`)
 
-Only the card **title** and **status badge** are shown. Everything else is hidden. This is ideal for small terminals or high-density boards.
+The card **title**, **status badge**, and **time line** are shown. Everything else is hidden. This is ideal for small terminals or high-density boards.
 
 ```
 ┌─────────────────────┐
 │ TASK 01  Pending     │
+│ 14:30→14:32          │
 └─────────────────────┘
 ```
 
@@ -108,6 +109,7 @@ Cards show all available fields. The `contentLines` array lets you define custom
 │ > docker build -t app:v2.4 .     │  ← contentLines[0]
 │ > kubectl apply -f deploy.yaml   │  ← contentLines[1]
 │ > Waiting for rollout...         │  ← contentLines[2]
+│ 14:30:00 → 14:42:34             │  ← time line (always last)
 ╰─────────────────────────────────╯
 ```
 
@@ -131,6 +133,38 @@ const card: KanbanCardData = {
 ```
 
 Cards without `contentLines` (or with an empty array) render normally — this field is fully optional and additive.
+
+## Time Tracking
+
+Every card can display a live timer as its **last row** — visible in both compact and extended modes.
+
+Set `startedAt` to a `Date.now()` epoch timestamp when the card is created. The timer ticks every second, showing elapsed time. When the work finishes, set `finishedAt` to freeze the display.
+
+```tsx
+// Card with a live ticking timer
+{
+  key: "task-1",
+  title: "BUILD",
+  status: { label: "Running", color: "cyan", spinning: true },
+  startedAt: Date.now(),       // timer starts now
+  // finishedAt is absent → time ticks every second
+}
+
+// Card with a frozen timer
+{
+  key: "task-2",
+  title: "LINT",
+  status: { label: "Done", color: "green" },
+  startedAt: 1713200000000,    // when it started
+  finishedAt: 1713200045000,   // when it finished — timer freezes
+}
+```
+
+Display format:
+- **Compact** (`tiny`): `HH:MM→HH:MM` (e.g. `14:30→14:32`)
+- **Extended** (`spacious`): `HH:MM:SS → HH:MM:SS` (e.g. `14:30:00 → 14:32:15`)
+
+The timer updates automatically for all active cards simultaneously — no extra hooks or intervals needed from the consumer.
 
 ## Dynamic Updates
 
@@ -329,6 +363,8 @@ interface KanbanCardData {
   contextIsError?: boolean; // Renders contextLine in red
   isPreview?: boolean;      // Dimmed placeholder styling
   contentLines?: string[];  // Custom text rows (spacious only) — variable card height
+  startedAt?: number;       // Epoch ms — enables time line (both modes)
+  finishedAt?: number;      // Epoch ms — freezes the timer when set
 }
 ```
 

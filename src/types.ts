@@ -77,6 +77,18 @@ export interface KanbanCard {
    * Cards with different-length arrays will have different visual heights.
    */
   contentLines?: string[];
+  /**
+   * Epoch timestamp (ms) when the card was created / entered the board.
+   * Shown in both compact and extended modes as the last row.
+   * Format: `HH:MM→HH:MM` (compact) or `HH:MM:SS → HH:MM:SS` (extended).
+   */
+  startedAt?: number;
+  /**
+   * Epoch timestamp (ms) when the card finished.
+   * While absent the elapsed side of the time line ticks every second.
+   * Once set the time line freezes at `startedAt → finishedAt`.
+   */
+  finishedAt?: number;
 }
 
 // ── Column types ───────────────────────────────────────────

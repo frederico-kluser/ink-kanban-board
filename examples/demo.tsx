@@ -40,6 +40,8 @@ interface SimulatedTask {
   statusColor: string;
   spinning: boolean;
   logs: string[];
+  startedAt: number;
+  finishedAt?: number;
 }
 
 function createInitialTasks(): SimulatedTask[] {
@@ -52,6 +54,7 @@ function createInitialTasks(): SimulatedTask[] {
     statusColor: "gray",
     spinning: false,
     logs: [],
+    startedAt: Date.now(),
   }));
 }
 
@@ -93,6 +96,7 @@ function DemoApp() {
             task.statusLabel = "Done";
             task.statusColor = "green";
             task.spinning = false;
+            task.finishedAt = Date.now();
             task.logs.push(`Completed at ${new Date().toLocaleTimeString()}`);
           } else if (task.progress > 0.7) {
             task.statusLabel = "Finalizing";
@@ -152,6 +156,8 @@ function DemoApp() {
       ? [{ label: "Completed" }]
       : undefined,
     contentLines: task.logs.length > 0 ? task.logs.slice(-3) : undefined,
+    startedAt: task.startedAt,
+    finishedAt: task.finishedAt,
   });
 
   const columns: KanbanColumn[] = [
