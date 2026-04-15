@@ -1,0 +1,52 @@
+{
+  "name": "ink-kanban-board",
+  "version": "1.0.0",
+  "description": "A modular, responsive Kanban board component for Ink terminal applications",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx examples/demo.tsx",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ink",
+    "kanban",
+    "terminal",
+    "tui",
+    "cli",
+    "react",
+    "board",
+    "dashboard",
+    "task-management"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "ink": ">=4.0.0",
+    "react": ">=18.0.0"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "ink": "^6.8.0",
+    "react": "^19.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}
