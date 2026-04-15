@@ -25,6 +25,7 @@
     "demo:focus": "tsx examples/focus-navigation.tsx",
     "demo:pipeline": "tsx examples/multi-pipeline.tsx",
     "demo:logs": "tsx examples/live-logs.tsx",
+    "demo:modal": "tsx examples/card-detail-modal.tsx",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

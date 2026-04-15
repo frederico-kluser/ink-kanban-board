@@ -338,6 +338,160 @@ The choice is yours. The board renders whatever timestamps you provide.
 
 ---
 
+## Card Detail Modal
+
+Press **Enter** on a focused card to open an interactive modal. The modal **replaces** the board view — the board state is preserved in React state and restores when the modal closes. This ensures a clean, readable modal without transparency artifacts.
+
+### Opening a Modal
+
+Use the `useCardModal` hook to manage modal state, and conditionally render the modal **instead of** the board:
+
+```tsx
+import {
+  KanbanBoard,
+  CardDetailModal,
+  useCardModal,
+  type ModalSection,
+} from "ink-kanban-board";
+import { useInput } from "ink";
+
+function App() {
+  const [focusedKey, setFocusedKey] = useState<string | null>("task-1");
+  const { isOpen, card, open, close } = useCardModal();
+
+  // Disable board navigation while modal is open
+  useInput((input, key) => {
+    // ... arrow key navigation ...
+    if (key.return && focusedKey) {
+      const cardData = findCard(focusedKey);
+      if (cardData) open(cardData);
+    }
+  }, { isActive: !isOpen });
+
+  const sections: ModalSection[] = [
+    { type: "text",      label: "Notes",     value: notes, onSubmit: addNote },
+    { type: "checklist", label: "Subtasks",  items,        onToggle: toggle },
+    { type: "select",    label: "Priority",  options,      value: prio, onChange: setPrio },
+    { type: "steps",     label: "Pipeline",  steps },
+  ];
+
+  return (
+    <Box flexDirection="column">
+      {isOpen && card ? (
+        <CardDetailModal card={card} sections={sections} onClose={close} />
+      ) : (
+        <KanbanBoard columns={columns} focusedCardKey={focusedKey} />
+      )}
+    </Box>
+  );
+}
+```
+
+### Modal Sections
+
+The `sections` array defines what appears inside the modal. Each section is a union type (`ModalSection`) with a `type` discriminator:
+
+#### Text Section
+
+Displays multi-line text with an optional input field for adding new lines:
+
+```tsx
+{
+  type: "text",
+  label: "📝 Notes",
+  value: "Existing note text.\nSecond line.",
+  placeholder: "Type a note...",
+  onSubmit: (text) => {
+    // Called when user types and presses Enter
+    setNotes(prev => prev + "\n" + text);
+  },
+}
+```
+
+When `onSubmit` is provided, the section shows an interactive text input when focused. Without `onSubmit`, the section is read-only.
+
+#### Checklist Section
+
+Interactive checkbox list with toggle support:
+
+```tsx
+{
+  type: "checklist",
+  label: "☑ Subtasks",
+  items: [
+    { key: "a", label: "Design mockups",  checked: true },
+    { key: "b", label: "Implement API",   checked: false },
+    { key: "c", label: "Write tests",     checked: false },
+  ],
+  onToggle: (key, checked) => {
+    // Called when user presses Space or Enter on an item
+    updateSubtask(key, checked);
+  },
+}
+```
+
+Navigate items with **↑↓**, toggle with **Space** or **Enter**.
+
+#### Select Section
+
+Single-select from a list of options:
+
+```tsx
+{
+  type: "select",
+  label: "⚡ Priority",
+  options: [
+    { label: "Low",      value: "low" },
+    { label: "Medium",   value: "medium" },
+    { label: "High",     value: "high" },
+    { label: "Critical", value: "critical" },
+  ],
+  value: "medium",  // currently selected
+  onChange: (value) => {
+    setPriority(value);
+  },
+}
+```
+
+Navigate with **↑↓**, select with **Enter**. The current selection shows a `●` indicator.
+
+#### Steps Section
+
+Visual pipeline/progress display with optional action callbacks:
+
+```tsx
+{
+  type: "steps",
+  label: "🔄 Pipeline",
+  steps: [
+    { key: "build",  label: "Build",  status: "done" },
+    { key: "test",   label: "Test",   status: "active" },
+    { key: "deploy", label: "Deploy", status: "pending" },
+  ],
+  onAction: (key) => {
+    // Called when user presses Enter on a step
+    advanceStep(key);
+  },
+}
+```
+
+Navigate steps with **←→**, trigger actions with **Enter**. Status icons: ✓ done, ◆ active, ○ pending, ✗ error.
+
+### Modal Navigation
+
+| Key | Action |
+|---|---|
+| **↑↓** | Navigate between sections (or items within checklist/select — overflows to next section) |
+| **←→** | Navigate steps (steps section) |
+| **Tab / Shift+Tab** | Jump between sections |
+| **Enter** | Start editing (text) / toggle (checklist) / select option / trigger step action |
+| **Space** | Toggle checkbox (checklist) |
+| **Esc** | Exit edit mode (text input) or close the modal |
+
+When editing a **text section**, all keys are captured for typing. Press **Esc** to stop editing and return to section navigation. The footer always shows context-sensitive shortcut hints.
+
+---
+
 ## Focus & Navigation
 
 ### Focused Card
@@ -498,6 +652,58 @@ function buildColumns(jobs: PipelineJob[]): KanbanColumn[] {
 | `maxItemsPerColumn` | `number` | `5` | Max visible cards before overflow indicators |
 | `showProgress` | `boolean` | `true` | Show progress summary bar |
 
+### `<CardDetailModal />` Props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `card` | `KanbanCardData` | *required* | The card being inspected |
+| `sections` | `ModalSection[]` | *required* | Interactive sections to render |
+| `onClose` | `() => void` | *required* | Called when Esc is pressed |
+| `title` | `string` | `card.title` | Title override for the modal header |
+
+### `ModalSection` (Union Type)
+
+| Type | Key Fields | Description |
+|---|---|---|
+| `ModalTextSection` | `value`, `onSubmit?`, `placeholder?` | Multi-line text display with optional input |
+| `ModalChecklistSection` | `items`, `onToggle?` | Checkbox list with toggle support |
+| `ModalSelectSection` | `options`, `value?`, `onChange?` | Single-select from options |
+| `ModalStepsSection` | `steps`, `onAction?` | Pipeline/progress step display |
+
+### `ChecklistItem`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `key` | `string` | yes | Unique identifier |
+| `label` | `string` | yes | Display text |
+| `checked` | `boolean` | yes | Whether the item is checked |
+
+### `SelectOption`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `label` | `string` | yes | Display text |
+| `value` | `string` | yes | Value passed to onChange |
+
+### `StepItem`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `key` | `string` | yes | Unique identifier |
+| `label` | `string` | yes | Display text |
+| `status` | `"pending" \| "active" \| "done" \| "error"` | yes | Visual status |
+
+### `useCardModal()`
+
+Returns `CardModalState`:
+
+| Field | Type | Description |
+|---|---|---|
+| `isOpen` | `boolean` | Whether the modal is currently open |
+| `card` | `KanbanCardData \| null` | The card being inspected |
+| `open` | `(card: KanbanCardData) => void` | Open the modal for a card |
+| `close` | `() => void` | Close the modal |
+
 ### `KanbanCardData`
 
 | Field | Type | Required | Description |
@@ -570,10 +776,12 @@ Returns `TerminalViewport`:
 |---|---|
 | `KanbanBoard` | Main board component |
 | `KanbanCard` | Individual card (used internally, exported for advanced layouts) |
+| `CardDetailModal` | Interactive modal overlay for card details |
 | `Panel` | Bordered container with tone coloring |
 | `StatCard` | Label + value display card |
 | `Pill` | Colored label badge |
 | `useTerminalSize` | Terminal measurement hook |
+| `useCardModal` | Modal open/close state management hook |
 
 ---
 
@@ -590,6 +798,7 @@ Run any example with the corresponding script:
 | `npm run demo:focus` | Keyboard focus navigation with overflow indicators |
 | `npm run demo:pipeline` | 5-column CI/CD pipeline with animated progression |
 | `npm run demo:logs` | Streaming `contentLines` — live tail effect |
+| `npm run demo:modal` | Card detail modal — Enter to open, interactive sections |
 
 ---
 

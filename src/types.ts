@@ -133,3 +133,100 @@ export interface TerminalViewport {
   density: LayoutDensity;
   isShort: boolean;
 }
+
+// ── Modal Section Types ────────────────────────────────────
+
+/** A text section displaying multi-line content with optional text input. */
+export interface ModalTextSection {
+  type: "text";
+  /** Section header label. */
+  label: string;
+  /** Multi-line text content to display. */
+  value: string;
+  /** Placeholder shown in the input field when empty. */
+  placeholder?: string;
+  /** Called when the user submits text via Enter. When provided, an input field is shown. */
+  onSubmit?: (text: string) => void;
+}
+
+/** A single item in a checklist section. */
+export interface ChecklistItem {
+  /** Unique key for this item. */
+  key: string;
+  /** Display label. */
+  label: string;
+  /** Whether the item is checked. */
+  checked: boolean;
+}
+
+/** A checklist section with toggleable checkbox items. */
+export interface ModalChecklistSection {
+  type: "checklist";
+  /** Section header label. */
+  label: string;
+  /** Checklist items. */
+  items: ChecklistItem[];
+  /** Called when an item is toggled. */
+  onToggle?: (key: string, checked: boolean) => void;
+}
+
+/** An option in a select section. */
+export interface SelectOption {
+  /** Display label. */
+  label: string;
+  /** Option value passed to onChange. */
+  value: string;
+}
+
+/** A single-select section. */
+export interface ModalSelectSection {
+  type: "select";
+  /** Section header label. */
+  label: string;
+  /** Available options. */
+  options: SelectOption[];
+  /** Currently selected value. */
+  value?: string;
+  /** Called when the user selects an option. */
+  onChange?: (value: string) => void;
+}
+
+/** A step in a pipeline/progress section. */
+export interface StepItem {
+  /** Unique key for this step. */
+  key: string;
+  /** Display label. */
+  label: string;
+  /** Visual status of the step. */
+  status: "pending" | "active" | "done" | "error";
+}
+
+/** A steps/pipeline progress section. */
+export interface ModalStepsSection {
+  type: "steps";
+  /** Section header label. */
+  label: string;
+  /** Pipeline steps. */
+  steps: StepItem[];
+  /** Called when the user presses Enter on a step. */
+  onAction?: (key: string) => void;
+}
+
+/** Union of all supported modal section types. */
+export type ModalSection =
+  | ModalTextSection
+  | ModalChecklistSection
+  | ModalSelectSection
+  | ModalStepsSection;
+
+/** Props for the CardDetailModal component. */
+export interface CardDetailModalProps {
+  /** The card being inspected. Used for header display. */
+  card: KanbanCard;
+  /** Interactive sections to render in the modal body. */
+  sections: ModalSection[];
+  /** Called when the modal should close (Esc key). */
+  onClose: () => void;
+  /** Title override. Defaults to card.title. */
+  title?: string;
+}
