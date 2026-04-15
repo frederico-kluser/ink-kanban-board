@@ -21,7 +21,7 @@ export function KanbanCard({ card, focused = false, density = "tiny" }: KanbanCa
   const { status } = card;
   const isTiny = density === "tiny";
 
-  // ── Tiny mode: single-line card ──
+  // ── Tiny mode: single-line card (only title + status) ──
   if (isTiny) {
     return (
       <Box
@@ -30,12 +30,8 @@ export function KanbanCard({ card, focused = false, density = "tiny" }: KanbanCa
         paddingX={0}
         paddingY={0}
       >
-        <Text color={card.isPreview ? "gray" : "cyan"} bold>{shorten(card.title, 12)}</Text>
+        <Text color={card.isPreview ? "gray" : "cyan"} bold>{shorten(card.title, 18)}</Text>
         <Text color={status.color}> {status.label}</Text>
-        {card.subtitle && <Text color="white" wrap="truncate-end"> {shorten(card.subtitle, 20)}</Text>}
-        {card.metadata && card.metadata.length > 0 && (
-          <Text color="gray" dimColor wrap="truncate-end"> {card.metadata[0]!.label}</Text>
-        )}
       </Box>
     );
   }
@@ -89,6 +85,15 @@ export function KanbanCard({ card, focused = false, density = "tiny" }: KanbanCa
         >
           {card.contextLine}
         </Text>
+      )}
+
+      {/* Row 6+: Content lines (variable-height) */}
+      {card.contentLines && card.contentLines.length > 0 && (
+        <Box flexDirection="column" marginTop={card.contextLine ? 0 : 0}>
+          {card.contentLines.map((line, i) => (
+            <Text key={i} color="white" wrap="truncate-end">{line}</Text>
+          ))}
+        </Box>
       )}
     </Box>
   );

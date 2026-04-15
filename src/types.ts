@@ -70,6 +70,13 @@ export interface KanbanCard {
   contextIsError?: boolean;
   /** When true, card is rendered with dimmed styling to indicate it's a placeholder. */
   isPreview?: boolean;
+  /**
+   * Optional array of text lines rendered in spacious (extended) mode.
+   * Each entry becomes a separate row below the card header.
+   * In compact (tiny) mode these lines are hidden — only `title` is shown.
+   * Cards with different-length arrays will have different visual heights.
+   */
+  contentLines?: string[];
 }
 
 // ── Column types ───────────────────────────────────────────

@@ -19,6 +19,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx examples/demo.tsx",
+    "demo:hetero": "tsx examples/heterogeneous-cards.tsx",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

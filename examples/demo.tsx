@@ -39,6 +39,7 @@ interface SimulatedTask {
   statusLabel: string;
   statusColor: string;
   spinning: boolean;
+  logs: string[];
 }
 
 function createInitialTasks(): SimulatedTask[] {
@@ -50,6 +51,7 @@ function createInitialTasks(): SimulatedTask[] {
     statusLabel: "Pending",
     statusColor: "gray",
     spinning: false,
+    logs: [],
   }));
 }
 
@@ -79,6 +81,7 @@ function DemoApp() {
           task.statusColor = "cyan";
           task.spinning = true;
           task.progress = 0.2;
+          task.logs = [`Started at ${new Date().toLocaleTimeString()}`];
         }
 
         // Progress DOING tasks
@@ -90,12 +93,15 @@ function DemoApp() {
             task.statusLabel = "Done";
             task.statusColor = "green";
             task.spinning = false;
+            task.logs.push(`Completed at ${new Date().toLocaleTimeString()}`);
           } else if (task.progress > 0.7) {
             task.statusLabel = "Finalizing";
             task.statusColor = "magenta";
+            task.logs.push(`Finalizing... ${Math.round(task.progress * 100)}%`);
           } else if (task.progress > 0.4) {
             task.statusLabel = "Running";
             task.statusColor = "blueBright";
+            task.logs.push(`Processing... ${Math.round(task.progress * 100)}%`);
           }
         }
 
@@ -132,7 +138,9 @@ function DemoApp() {
   // Build columns from simulated tasks
   const toCard = (task: SimulatedTask): KanbanCardData => ({
     key: task.id,
-    title: task.id.replace("task-", "TASK "),
+    title: task.column === "doing"
+      ? `${task.id.replace("task-", "TASK ")} [${Math.round(task.progress * 100)}%]`
+      : task.id.replace("task-", "TASK "),
     subtitle: task.name,
     status: {
       label: task.statusLabel,
@@ -143,6 +151,7 @@ function DemoApp() {
     metadata: task.column === "done"
       ? [{ label: "Completed" }]
       : undefined,
+    contentLines: task.logs.length > 0 ? task.logs.slice(-3) : undefined,
   });
 
   const columns: KanbanColumn[] = [
