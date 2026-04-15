@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Box, Text, useInput, useStdout } from "ink";
+import { Box, Text, useInput } from "ink";
 import type { Key } from "ink";
 import type {
   KanbanCard,
@@ -12,10 +12,10 @@ import type {
 } from "./types.js";
 
 /**
- * Full-screen modal overlay for inspecting and interacting with a card.
+ * Interactive modal for inspecting and editing a card's details.
  *
- * Renders on top of the board using absolute positioning.
- * The board continues to render in the background.
+ * Render this **instead of** the board when the modal is open — the board
+ * state is preserved in React state while the modal is displayed.
  *
  * Navigation:
  * - **Tab / Shift+Tab** — move between sections
@@ -26,17 +26,14 @@ import type {
  *
  * @example
  * ```tsx
- * {isOpen && card && (
+ * {isOpen && card ? (
  *   <CardDetailModal
  *     card={card}
- *     sections={[
- *       { type: "text", label: "Notes", value: notes, onSubmit: addNote },
- *       { type: "checklist", label: "Subtasks", items, onToggle: toggle },
- *       { type: "select", label: "Priority", options, value: prio, onChange: setPrio },
- *       { type: "steps", label: "Pipeline", steps },
- *     ]}
+ *     sections={sections}
  *     onClose={close}
  *   />
+ * ) : (
+ *   <KanbanBoard columns={columns} focusedCardKey={focusedKey} />
  * )}
  * ```
  */
@@ -46,10 +43,7 @@ export function CardDetailModal({
   onClose,
   title,
 }: CardDetailModalProps) {
-  const { stdout } = useStdout();
-  const termWidth = stdout?.columns ?? 80;
-
-  const modalWidth = Math.min(termWidth - 4, 72);
+  const modalWidth = 72;
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [cursors, setCursors] = useState<number[]>(() => sections.map(() => 0));
@@ -155,15 +149,13 @@ export function CardDetailModal({
 
   return (
     <Box
-      position="absolute"
       flexDirection="column"
       width={modalWidth}
       borderStyle="double"
       borderColor="cyanBright"
       paddingX={1}
       paddingY={0}
-      marginLeft={Math.max(0, Math.floor((termWidth - modalWidth) / 2))}
-      marginTop={1}
+      alignSelf="center"
     >
       {/* Header */}
       <Box justifyContent="space-between">

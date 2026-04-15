@@ -340,11 +340,11 @@ The choice is yours. The board renders whatever timestamps you provide.
 
 ## Card Detail Modal
 
-Press **Enter** on a focused card to open an interactive modal overlay. The modal renders on top of the board (the board remains visible behind it) and supports rich form sections — all callback-driven so consumers can define custom behavior.
+Press **Enter** on a focused card to open an interactive modal. The modal **replaces** the board view — the board state is preserved in React state and restores when the modal closes. This ensures a clean, readable modal without transparency artifacts.
 
 ### Opening a Modal
 
-Use the `useCardModal` hook to manage modal state, and render `CardDetailModal` as a sibling to the board:
+Use the `useCardModal` hook to manage modal state, and conditionally render the modal **instead of** the board:
 
 ```tsx
 import {
@@ -377,9 +377,10 @@ function App() {
 
   return (
     <Box flexDirection="column">
-      <KanbanBoard columns={columns} focusedCardKey={focusedKey} />
-      {isOpen && card && (
+      {isOpen && card ? (
         <CardDetailModal card={card} sections={sections} onClose={close} />
+      ) : (
+        <KanbanBoard columns={columns} focusedCardKey={focusedKey} />
       )}
     </Box>
   );

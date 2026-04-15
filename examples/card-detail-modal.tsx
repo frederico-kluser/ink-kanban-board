@@ -342,18 +342,19 @@ function ModalDemoApp() {
             : "↑↓←→/hjkl: navigate • Enter: open modal • q: quit"}
         </Text>
       </Box>
-      <KanbanBoard
-        columns={columns}
-        focusedCardKey={focusedKey}
-        breakpoint={breakpoint}
-        density={density}
-        maxItemsPerColumn={5}
-      />
-      {isOpen && card && (
+      {isOpen && card ? (
         <CardDetailModal
           card={card}
           sections={sections}
           onClose={close}
+        />
+      ) : (
+        <KanbanBoard
+          columns={columns}
+          focusedCardKey={focusedKey}
+          breakpoint={breakpoint}
+          density={density}
+          maxItemsPerColumn={5}
         />
       )}
     </Box>
