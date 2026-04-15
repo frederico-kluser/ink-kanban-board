@@ -10,7 +10,7 @@
  * - Priority (single-select)
  * - Pipeline (step progress with actions)
  *
- * The board remains visible behind the modal overlay.
+ * The board remains in React state while the modal replaces it.
  */
 import React, { useState } from "react";
 import { render, Box, Text, useInput } from "ink";
@@ -236,9 +236,6 @@ function ModalDemoApp() {
         if (target.length > 0) {
           setFocusedKey(target[Math.min(row < 0 ? 0 : row, target.length - 1)]!.id);
         }
-      } else if (key.return && focusedKey) {
-        const task = tasks.find((t) => t.id === focusedKey);
-        if (task) open(toCard(task));
       } else if (key.escape) {
         setFocusedKey(null);
       } else if (input === "q") {
@@ -330,6 +327,12 @@ function ModalDemoApp() {
       ]
     : [];
 
+  // Handle Enter on focused card — open modal via onCardPress
+  const handleCardPress = (cardData: KanbanCardData) => {
+    const task = tasks.find((t) => t.id === cardData.key);
+    if (task) open(toCard(task));
+  };
+
   return (
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1} justifyContent="space-between">
@@ -355,6 +358,7 @@ function ModalDemoApp() {
           breakpoint={breakpoint}
           density={density}
           maxItemsPerColumn={5}
+          onCardPress={handleCardPress}
         />
       )}
     </Box>

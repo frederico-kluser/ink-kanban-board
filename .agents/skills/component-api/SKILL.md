@@ -5,7 +5,7 @@ description: >-
   CardDetailModal, Panel, Pill, StatCard. Use ao criar/modificar componentes ou tipos.
   Não use para layout responsivo ou exemplos.
 metadata:
-  version: "2.0.0"
+  version: "3.0.0"
   last-reviewed: "2026-04-15"
 paths: "src/*.tsx, src/*.ts, src/ui/*.tsx, src/hooks/*.ts"
 ---
@@ -86,8 +86,13 @@ interface KanbanBoardProps {
   density?: LayoutDensity;             // "tiny" | "spacious"
   maxItemsPerColumn?: number;          // Default: 5 (overflow → ↑↓ indicators)
   showProgress?: boolean;             // Default: true (barra de progresso geral)
+  onCardPress?: (card: KanbanCard) => void; // Callback ao pressionar Enter em card focado
 }
 ```
+
+**onCardPress behavior:**
+- Quando fornecido: o board captura Enter via `useInput` (com `isActive` guard) e chama o callback com os dados do card focado. Um indicador `⏎` aparece no card com foco.
+- Quando **não** fornecido: pressionar Enter não faz nada. Nenhum `useInput` é registrado pelo board. Nenhum `⏎` é exibido.
 
 ### Tone (cores semânticas)
 
@@ -210,3 +215,8 @@ em `package.json` se for um novo entrypoint.
 - No modal, seções text em modo edit capturam TODAS as teclas — Esc sai do edit mode
 - `ModalSection` é union discriminada pelo campo `type` — pattern matching via switch
 - `useCardModal` é stateless helper — pode ser substituído por useState manual
+- `onCardPress` ativa `useInput` interno no board — se não fornecido, NENHUM
+  `useInput` é registrado pelo board (zero impacto em inputs do consumidor)
+- O indicador `⏎` aparece apenas quando `onCardPress` está definido E o card tem foco
+- `showEnterHint` é prop interna do KanbanCard — NÃO incluir na API pública;
+  é computado internamente pelo board a partir de `onCardPress` + `focusedCardKey`

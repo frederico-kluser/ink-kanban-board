@@ -344,13 +344,19 @@ The `CardDetailModal` component renders an interactive detail view for a single 
 
 ### Opening a Modal
 
-Use the `useCardModal` hook to manage modal state, and conditionally render the modal **instead of** the board. The consumer is responsible for triggering `open()` — typically on **Enter** key in the `useInput` handler (see [Keyboard Navigation](#keyboard-navigation) for the full pattern).
+Pass `onCardPress` to `KanbanBoard` to enable the Enter key on focused cards. The board will:
+1. Handle Enter input internally (no manual `useInput` needed for this)
+2. Show a `⏎` hint on the focused card so users know Enter is available
+3. Call your `onCardPress` callback with the card data
+
+When `onCardPress` is **not provided**, pressing Enter does nothing and no hint is shown.
 
 ```tsx
 import {
   KanbanBoard,
   CardDetailModal,
   useCardModal,
+  type KanbanCardData,
   type ModalSection,
 } from "ink-kanban-board";
 
@@ -358,9 +364,9 @@ function App() {
   const [focusedKey, setFocusedKey] = useState<string | null>("task-1");
   const { isOpen, card, open, close } = useCardModal();
 
-  // Keyboard input — see "Keyboard Navigation" section for the full useInput example.
-  // The key integration point: call open(cardData) on Enter, and pass
-  // { isActive: !isOpen } to disable board navigation while the modal is open.
+  const handleCardPress = (cardData: KanbanCardData) => {
+    open(cardData);
+  };
 
   const sections: ModalSection[] = [
     { type: "text",      label: "Notes",     value: notes, onSubmit: addNote },
@@ -374,7 +380,11 @@ function App() {
       {isOpen && card ? (
         <CardDetailModal card={card} sections={sections} onClose={close} />
       ) : (
-        <KanbanBoard columns={columns} focusedCardKey={focusedKey} />
+        <KanbanBoard
+          columns={columns}
+          focusedCardKey={focusedKey}
+          onCardPress={handleCardPress}
+        />
       )}
     </Box>
   );
@@ -517,13 +527,15 @@ When a column has more cards than `maxItemsPerColumn` (default: 5), hidden cards
 
 ### Keyboard Navigation
 
-The board does **not** handle keyboard input — that's the consumer's responsibility via Ink's `useInput`. Here's the complete keyboard pattern including 2D navigation, modal opening, unfocus, and quit:
+The board does **not** handle directional navigation — that's the consumer's responsibility via Ink's `useInput`. The board only handles Enter internally when `onCardPress` is provided.
+
+Here's a standard 2D navigation pattern (↑↓ within column, ←→ across columns):
 
 ```tsx
 import { useInput } from "ink";
 import { useCardModal } from "ink-kanban-board";
 
-const { isOpen, card, open, close } = useCardModal();
+const { isOpen } = useCardModal();
 
 useInput((input, key) => {
   // Find current (col, row) from focusedKey
@@ -534,44 +546,36 @@ useInput((input, key) => {
   }
 
   if (key.downArrow || input === "j") {
-    // Move down within column
     if (col >= 0) {
       const next = Math.min(columns[col].cards.length - 1, row + 1);
       setFocusedKey(columns[col].cards[next].key);
     }
   } else if (key.upArrow || input === "k") {
-    // Move up within column
     if (col >= 0) {
       const next = Math.max(0, row - 1);
       setFocusedKey(columns[col].cards[next].key);
     }
   } else if (key.rightArrow || input === "l") {
-    // Move to next column, preserving row position
     const nextCol = Math.min(columns.length - 1, col + 1);
     const target = columns[nextCol].cards;
     if (target.length > 0) {
       setFocusedKey(target[Math.min(row, target.length - 1)].key);
     }
   } else if (key.leftArrow || input === "h") {
-    // Move to previous column, preserving row position
     const nextCol = Math.max(0, col - 1);
     const target = columns[nextCol].cards;
     if (target.length > 0) {
       setFocusedKey(target[Math.min(row, target.length - 1)].key);
     }
-  } else if (key.return && focusedKey) {
-    // Open card detail modal (see Card Detail Modal section)
-    const cardData = columns[col]?.cards[row];
-    if (cardData) open(cardData);
   } else if (key.escape) {
     setFocusedKey(null);
   } else if (input === "q") {
     process.exit(0);
   }
-}, { isActive: !isOpen });  // disable board navigation while modal is open
+}, { isActive: !isOpen });  // disable navigation while modal is open
 ```
 
-> **Note:** The `{ isActive: !isOpen }` option disables board navigation while the modal is open. The modal handles its own keyboard input internally. See [Card Detail Modal](#card-detail-modal) for the full integration pattern.
+> **Note:** Enter is handled by the board itself when `onCardPress` is provided — you don't need to wire it manually. Pass `{ isActive: !isOpen }` to disable arrow navigation while the modal is open.
 
 ---
 
@@ -658,6 +662,7 @@ function buildColumns(jobs: PipelineJob[]): KanbanColumn[] {
 | `density` | `"tiny" \| "spacious"` | `"tiny"` | Card detail level |
 | `maxItemsPerColumn` | `number` | `5` | Max visible cards before overflow indicators |
 | `showProgress` | `boolean` | `true` | Show progress summary bar |
+| `onCardPress` | `(card: KanbanCardData) => void` | — | Called on Enter when a card is focused. When provided, shows `⏎` hint on the focused card |
 
 ### `<CardDetailModal />` Props
 
@@ -783,7 +788,7 @@ Returns `TerminalViewport`:
 |---|---|
 | `KanbanBoard` | Main board component |
 | `KanbanCard` | Individual card (used internally, exported for advanced layouts) |
-| `CardDetailModal` | Interactive modal overlay for card details |
+| `CardDetailModal` | Interactive card detail view (replaces board) |
 | `Panel` | Bordered container with tone coloring |
 | `StatCard` | Label + value display card |
 | `Pill` | Colored label badge |

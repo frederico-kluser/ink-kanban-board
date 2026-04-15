@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import { KanbanCard } from "./kanban-card.js";
 import { Panel } from "./ui/panel.js";
 import type {
@@ -35,12 +35,31 @@ export function KanbanBoard({
   density = "tiny",
   maxItemsPerColumn = 5,
   showProgress = true,
+  onCardPress,
 }: KanbanBoardProps) {
   const direction = breakpoint === "compact" ? "column" : "row";
   const isTiny = density === "tiny";
   const cardGap = isTiny ? 0 : 1;
 
   const totalCards = columns.reduce((sum, col) => sum + col.cards.length, 0);
+
+  // Handle Enter key when onCardPress is provided
+  useInput(
+    (_input, key) => {
+      if (key.return && focusedCardKey && onCardPress) {
+        for (const col of columns) {
+          const card = col.cards.find((c) => c.key === focusedCardKey);
+          if (card) {
+            onCardPress(card);
+            return;
+          }
+        }
+      }
+    },
+    { isActive: !!onCardPress && !!focusedCardKey },
+  );
+
+  const hasEnterAction = !!onCardPress;
 
   return (
     <Box flexDirection="column" gap={isTiny ? 0 : 1} flexGrow={1}>
@@ -56,6 +75,7 @@ export function KanbanBoard({
             maxItems={maxItemsPerColumn}
             density={density}
             cardGap={cardGap}
+            hasEnterAction={hasEnterAction}
           />
         ))}
       </Box>
@@ -71,9 +91,10 @@ interface ColumnViewProps {
   maxItems: number;
   density: LayoutDensity;
   cardGap: number;
+  hasEnterAction: boolean;
 }
 
-function ColumnView({ column, focusedCardKey, maxItems, density, cardGap }: ColumnViewProps) {
+function ColumnView({ column, focusedCardKey, maxItems, density, cardGap, hasEnterAction }: ColumnViewProps) {
   const { cards, title, tone } = column;
   const isTiny = density === "tiny";
 
@@ -102,6 +123,7 @@ function ColumnView({ column, focusedCardKey, maxItems, density, cardGap }: Colu
                 card={card}
                 focused={card.key === focusedCardKey}
                 density={density}
+                showEnterHint={card.key === focusedCardKey && hasEnterAction}
               />
             ))}
             {hiddenAfter > 0 && <Text color="gray">↓ {hiddenAfter}</Text>}

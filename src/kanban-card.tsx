@@ -8,6 +8,8 @@ export interface KanbanCardProps {
   card: KanbanCardType;
   focused?: boolean;
   density?: LayoutDensity;
+  /** When true, shows a "⏎" hint indicating Enter triggers an action. */
+  showEnterHint?: boolean;
 }
 
 /**
@@ -19,7 +21,7 @@ export interface KanbanCardProps {
  *
  * The time line (`startedAt → now` or `startedAt → finishedAt`) is always the last row.
  */
-export function KanbanCard({ card, focused = false, density = "tiny" }: KanbanCardProps) {
+export function KanbanCard({ card, focused = false, density = "tiny", showEnterHint = false }: KanbanCardProps) {
   const { status } = card;
   const isTiny = density === "tiny";
   const isTimerActive = !!card.startedAt && !card.finishedAt;
@@ -45,6 +47,7 @@ export function KanbanCard({ card, focused = false, density = "tiny" }: KanbanCa
         <Box>
           <Text color={card.isPreview ? "gray" : "cyan"} bold>{shorten(card.title, 18)}</Text>
           <Text color={status.color}> {status.label}</Text>
+          {showEnterHint && <Text color="gray" dimColor> ⏎</Text>}
         </Box>
         {timeLine && <Text color="gray" dimColor>{timeLine.short}</Text>}
       </Box>
@@ -75,6 +78,7 @@ export function KanbanCard({ card, focused = false, density = "tiny" }: KanbanCa
         <Box>
           {status.spinning && <Spinner type="dots" />}
           <Text color={status.color} bold> {status.label}</Text>
+          {showEnterHint && <Text color="gray" dimColor> ⏎</Text>}
         </Box>
       </Box>
 

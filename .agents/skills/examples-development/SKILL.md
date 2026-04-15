@@ -87,10 +87,11 @@ e como criar novos exemplos para o ink-kanban-board.
 - Demonstra: padrão adapter completo para integração real
 
 ### card-detail-modal.tsx — Modal Interativo
-- Abre modal com Enter sobre card focado, fecha com Esc
+- Usa `onCardPress` no KanbanBoard para abrir modal com Enter sobre card focado, fecha com Esc
+- Indicador `⏎` aparece automaticamente no card focado (gerenciado pelo board)
 - 4 tipos de seção: text (com input), checklist (toggle), select (radio), steps (pipeline)
 - Navegação: ↑↓ entre seções/items, Tab/Shift+Tab jump, ←→ steps, Space toggle
-- Demonstra: CardDetailModal, useCardModal, ModalSection[], useInput com isActive
+- Demonstra: CardDetailModal, useCardModal, onCardPress, ModalSection[]
 
 ## Workflow para Criar um Novo Exemplo
 

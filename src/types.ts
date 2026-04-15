@@ -121,6 +121,12 @@ export interface KanbanBoardProps {
   maxItemsPerColumn?: number;
   /** When true, shows a progress summary bar above the columns. Defaults to true. */
   showProgress?: boolean;
+  /**
+   * Called when the user presses Enter on a focused card.
+   * When provided, the board handles Enter key input and shows a "⏎" hint on the focused card.
+   * When absent, Enter does nothing and no hint is shown.
+   */
+  onCardPress?: (card: KanbanCard) => void;
 }
 
 // ── Viewport (from useTerminalSize hook) ───────────────────
