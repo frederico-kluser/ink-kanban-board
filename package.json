@@ -26,6 +26,7 @@
     "demo:pipeline": "tsx examples/multi-pipeline.tsx",
     "demo:logs": "tsx examples/live-logs.tsx",
     "demo:modal": "tsx examples/card-detail-modal.tsx",
+    "demo:modal-logs": "tsx examples/modal-live-logs.tsx",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

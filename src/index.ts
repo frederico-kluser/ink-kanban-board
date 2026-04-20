@@ -29,6 +29,7 @@ export type {
   ModalChecklistSection,
   ModalSelectSection,
   ModalStepsSection,
+  ModalLogsSection,
   ChecklistItem,
   SelectOption,
   StepItem,

@@ -373,6 +373,7 @@ function App() {
     { type: "checklist", label: "Subtasks",  items,        onToggle: toggle },
     { type: "select",    label: "Priority",  options,      value: prio, onChange: setPrio },
     { type: "steps",     label: "Pipeline",  steps },
+    { type: "logs",      label: "Runtime Logs", taskLabel: "worker-a", isRunning: true, lines: taskLogs },
   ];
 
   return (
@@ -481,11 +482,31 @@ Visual pipeline/progress display with optional action callbacks:
 
 Navigate steps with **←→**, trigger actions with **Enter**. Status icons: ✓ done, ◆ active, ○ pending, ✗ error.
 
+#### Logs Section (Real-time)
+
+Live task output with controlled scrolling:
+
+```tsx
+{
+  type: "logs",
+  label: "📜 Runtime Logs",
+  taskLabel: "Deploy Worker",
+  isRunning: true,
+  lines: logs,
+  placeholder: "Waiting for first log line...",
+  maxVisibleLines: 12,
+}
+```
+
+- Use **↑↓** to move through log lines.
+- New lines are always rendered, but scrolling only auto-follows when the cursor is at the last line.
+- If the user scrolls up, the viewport stays locked while logs continue arriving.
+
 ### Modal Navigation
 
 | Key | Action |
 |---|---|
-| **↑↓** | Navigate between sections (or items within checklist/select — overflows to next section) |
+| **↑↓** | Navigate sections/items and log lines (`logs` section). In logs, auto-follow happens only at the tail |
 | **←→** | Navigate steps (steps section) |
 | **Tab / Shift+Tab** | Jump between sections |
 | **Enter** | Start editing (text) / toggle (checklist) / select option / trigger step action |
@@ -681,6 +702,7 @@ function buildColumns(jobs: PipelineJob[]): KanbanColumn[] {
 | `ModalChecklistSection` | `items`, `onToggle?` | Checkbox list with toggle support |
 | `ModalSelectSection` | `options`, `value?`, `onChange?` | Single-select from options |
 | `ModalStepsSection` | `steps`, `onAction?` | Pipeline/progress step display |
+| `ModalLogsSection` | `taskLabel`, `isRunning`, `lines`, `maxVisibleLines?` | Real-time logs with keyboard navigation and tail-follow behavior |
 
 ### `ChecklistItem`
 
@@ -704,6 +726,18 @@ function buildColumns(jobs: PipelineJob[]): KanbanColumn[] {
 | `key` | `string` | yes | Unique identifier |
 | `label` | `string` | yes | Display text |
 | `status` | `"pending" \| "active" \| "done" \| "error"` | yes | Visual status |
+
+### `ModalLogsSection`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"logs"` | yes | Discriminator for live logs section |
+| `label` | `string` | yes | Section title |
+| `taskLabel` | `string` | yes | Task/job name shown in section metadata |
+| `isRunning` | `boolean` | yes | Running (`true`) vs stopped (`false`) state indicator |
+| `lines` | `string[]` | yes | Log lines in append order |
+| `placeholder` | `string` | no | Message shown when no logs are available |
+| `maxVisibleLines` | `number` | no | Visible log rows before scrolling (default: 10) |
 
 ### `useCardModal()`
 
@@ -811,6 +845,7 @@ Run any example with the corresponding script:
 | `npm run demo:pipeline` | 5-column CI/CD pipeline with animated progression |
 | `npm run demo:logs` | Streaming `contentLines` — live tail effect |
 | `npm run demo:modal` | Card detail modal — Enter to open, interactive sections |
+| `npm run demo:modal-logs` | Card detail modal in log-stream mode with follow/freeze scroll behavior |
 
 ---
 

@@ -218,12 +218,30 @@ export interface ModalStepsSection {
   onAction?: (key: string) => void;
 }
 
+/** A live log stream section for real-time task output. */
+export interface ModalLogsSection {
+  type: "logs";
+  /** Section header label. */
+  label: string;
+  /** Task/job name shown in the section header metadata. */
+  taskLabel: string;
+  /** Whether the task is currently running. */
+  isRunning: boolean;
+  /** Log lines in arrival order. New lines are appended by the consumer. */
+  lines: string[];
+  /** Placeholder shown when there are no log lines yet. */
+  placeholder?: string;
+  /** Maximum number of log lines visible at once before scrolling is required. Default: 10. */
+  maxVisibleLines?: number;
+}
+
 /** Union of all supported modal section types. */
 export type ModalSection =
   | ModalTextSection
   | ModalChecklistSection
   | ModalSelectSection
-  | ModalStepsSection;
+  | ModalStepsSection
+  | ModalLogsSection;
 
 /** Props for the CardDetailModal component. */
 export interface CardDetailModalProps {
