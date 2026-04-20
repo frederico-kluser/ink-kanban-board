@@ -847,6 +847,14 @@ Run any example with the corresponding script:
 | `npm run demo:modal` | Card detail modal — Enter to open, interactive sections |
 | `npm run demo:modal-logs` | Card detail modal in log-stream mode with follow/freeze scroll behavior |
 
+## npm Deploy
+
+| Script | Description |
+|---|---|
+| `npm run deploy:npm` | Bumps patch version, creates the release commit/tag, publishes to npm, and pushes commit/tag to remote |
+
+`deploy:npm` requires an authenticated npm session. The release step commits only `package.json` and `package-lock.json`.
+
 ---
 
 ## License
