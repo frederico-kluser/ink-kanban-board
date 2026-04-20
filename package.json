@@ -1,6 +1,6 @@
 {
   "name": "ink-kanban-board",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A modular, responsive Kanban board component for Ink terminal applications",
   "type": "module",
   "main": "dist/index.js",
@@ -28,6 +28,8 @@
     "demo:modal": "tsx examples/card-detail-modal.tsx",
     "demo:modal-logs": "tsx examples/modal-live-logs.tsx",
     "typecheck": "tsc --noEmit",
+    "release:patch": "node scripts/release-patch.mjs",
+    "deploy:npm": "npm run typecheck && npm run release:patch && npm publish && git push --follow-tags",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
