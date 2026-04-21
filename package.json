@@ -29,7 +29,7 @@
     "demo:modal-logs": "tsx examples/modal-live-logs.tsx",
     "typecheck": "tsc --noEmit",
     "release:patch": "node scripts/release-patch.mjs",
-    "deploy:npm": "npm run typecheck && npm run release:patch && npm publish --auth-type=legacy && git push --follow-tags",
+    "deploy:npm": "npm run typecheck && npm run release:patch && npm publish && git push --follow-tags",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
