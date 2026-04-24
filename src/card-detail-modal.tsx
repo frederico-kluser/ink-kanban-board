@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Box, Text, useInput } from "ink";
+import { Box, Text, useInput, useStdout } from "ink";
 import type { Key } from "ink";
 import type {
   CardDetailModalProps,
@@ -12,6 +12,9 @@ import type {
 } from "./types.js";
 
 const DEFAULT_LOG_VISIBLE_LINES = 10;
+
+// \x1B[2J erases the screen, \x1B[3J drops the scrollback buffer, \x1B[H homes the cursor.
+const CLEAR_TERMINAL_SEQUENCE = "\x1B[2J\x1B[3J\x1B[H";
 
 /**
  * Interactive modal for inspecting and editing a card's details.
@@ -52,6 +55,18 @@ export function CardDetailModal({
   title,
 }: CardDetailModalProps) {
   const modalWidth = 72;
+  const { write } = useStdout();
+
+  // Force a clean slate on modal mount/unmount. Ink's differential renderer
+  // tracks logical line count, not wrapped visual rows — swapping between the
+  // full-width board and the 72-col modal can leave residue when terminal
+  // wrapping shifts actual rows past what eraseLines() clears.
+  useEffect(() => {
+    write(CLEAR_TERMINAL_SEQUENCE);
+    return () => {
+      write(CLEAR_TERMINAL_SEQUENCE);
+    };
+  }, [write]);
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [cursors, setCursors] = useState<number[]>(() => sections.map(() => 0));
