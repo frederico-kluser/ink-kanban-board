@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Box, Text, useInput, useStdout } from "ink";
 import type { Key } from "ink";
+import { useTerminalSize } from "./hooks/use-terminal-size.js";
 import type {
   CardDetailModalProps,
   ModalSection,
@@ -12,6 +13,17 @@ import type {
 } from "./types.js";
 
 const DEFAULT_LOG_VISIBLE_LINES = 10;
+
+// Rows consumed by modal chrome: 2 borders + 1 header + 1 summary + 1 margin
+// before sections + 2 footer lines + 1 margin before footer.
+const MODAL_CHROME_ROWS = 8;
+
+// Approximate rows taken by a non-logs section: 2 borders + 1 label + 4 content.
+const APPROX_NON_LOGS_SECTION_ROWS = 7;
+
+// Rows consumed inside a logs section outside of the log lines: 2 borders +
+// 1 label + 1 status row + 1 status footer.
+const LOGS_SECTION_CHROME_ROWS = 5;
 
 // \x1B[2J erases the screen, \x1B[3J drops the scrollback buffer, \x1B[H homes the cursor.
 const CLEAR_TERMINAL_SEQUENCE = "\x1B[2J\x1B[3J\x1B[H";
@@ -54,13 +66,29 @@ export function CardDetailModal({
   onClose,
   title,
 }: CardDetailModalProps) {
-  const modalWidth = 72;
+  const { width: terminalWidth, height: terminalHeight } = useTerminalSize();
+  const modalWidth = terminalWidth;
+  const modalHeight = terminalHeight;
   const { write } = useStdout();
 
+  const logsSectionCount = sections.filter((s) => s.type === "logs").length;
+  const nonLogsSectionCount = sections.length - logsSectionCount;
+  const remainingRowsForLogs = Math.max(
+    0,
+    modalHeight -
+      MODAL_CHROME_ROWS -
+      nonLogsSectionCount * APPROX_NON_LOGS_SECTION_ROWS -
+      logsSectionCount * LOGS_SECTION_CHROME_ROWS,
+  );
+  const autoLogVisibleLines =
+    logsSectionCount > 0
+      ? Math.max(3, Math.floor(remainingRowsForLogs / logsSectionCount))
+      : DEFAULT_LOG_VISIBLE_LINES;
+
   // Force a clean slate on modal mount/unmount. Ink's differential renderer
-  // tracks logical line count, not wrapped visual rows — swapping between the
-  // full-width board and the 72-col modal can leave residue when terminal
-  // wrapping shifts actual rows past what eraseLines() clears.
+  // tracks logical line count, not wrapped visual rows — swapping components
+  // of different heights can leave residue when terminal wrapping shifts
+  // actual rows past what eraseLines() clears.
   useEffect(() => {
     write(CLEAR_TERMINAL_SEQUENCE);
     return () => {
@@ -89,9 +117,12 @@ export function CardDetailModal({
     [sections.length],
   );
 
-  const getVisibleLogLineCount = useCallback((section: ModalLogsSection): number => {
-    return Math.max(1, section.maxVisibleLines ?? DEFAULT_LOG_VISIBLE_LINES);
-  }, []);
+  const getVisibleLogLineCount = useCallback(
+    (section: ModalLogsSection): number => {
+      return Math.max(1, section.maxVisibleLines ?? autoLogVisibleLines);
+    },
+    [autoLogVisibleLines],
+  );
 
   const updateCursor = useCallback(
     (sectionIdx: number, value: number) => {
@@ -386,11 +417,11 @@ export function CardDetailModal({
     <Box
       flexDirection="column"
       width={modalWidth}
+      height={modalHeight}
       borderStyle="double"
       borderColor="cyanBright"
       paddingX={1}
       paddingY={0}
-      alignSelf="center"
     >
       {/* Header */}
       <Box justifyContent="space-between">
@@ -411,7 +442,7 @@ export function CardDetailModal({
       </Box>
 
       {/* Sections */}
-      <Box flexDirection="column" marginTop={1}>
+      <Box flexDirection="column" marginTop={1} flexGrow={1}>
         {sections.map((section, i) => (
           <SectionRenderer
             key={`${section.type}-${i}`}
@@ -421,6 +452,7 @@ export function CardDetailModal({
             cursor={cursors[i] ?? 0}
             logViewStart={logViewStarts[i] ?? 0}
             textBuffer={i === activeIdx ? textBuffer : ""}
+            autoLogVisibleLines={autoLogVisibleLines}
           />
         ))}
       </Box>
@@ -473,6 +505,7 @@ interface SectionRendererProps {
   cursor: number;
   logViewStart: number;
   textBuffer: string;
+  autoLogVisibleLines: number;
 }
 
 function SectionRenderer({
@@ -482,6 +515,7 @@ function SectionRenderer({
   cursor,
   logViewStart,
   textBuffer,
+  autoLogVisibleLines,
 }: SectionRendererProps) {
   switch (section.type) {
     case "text":
@@ -499,6 +533,7 @@ function SectionRenderer({
           active={active}
           cursor={cursor}
           logViewStart={logViewStart}
+          autoLogVisibleLines={autoLogVisibleLines}
         />
       );
   }
@@ -644,14 +679,16 @@ function LogsSectionView({
   active,
   cursor,
   logViewStart,
+  autoLogVisibleLines,
 }: {
   section: ModalLogsSection;
   active: boolean;
   cursor: number;
   logViewStart: number;
+  autoLogVisibleLines: number;
 }) {
   const borderColor = active ? "cyanBright" : "gray";
-  const visibleCount = Math.max(1, section.maxVisibleLines ?? DEFAULT_LOG_VISIBLE_LINES);
+  const visibleCount = Math.max(1, section.maxVisibleLines ?? autoLogVisibleLines);
   const totalLines = section.lines.length;
   const maxStart = Math.max(0, totalLines - visibleCount);
   const start = clamp(logViewStart, 0, maxStart);
@@ -667,6 +704,7 @@ function LogsSectionView({
       borderStyle={active ? "bold" : "single"}
       borderColor={borderColor}
       paddingX={1}
+      flexGrow={1}
     >
       <Text bold color={borderColor}>
         {section.label}

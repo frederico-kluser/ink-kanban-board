@@ -170,6 +170,17 @@ function ModalLiveLogsApp() {
       ]
     : [];
 
+  if (isOpen && modalCard && activeTask) {
+    return (
+      <CardDetailModal
+        card={modalCard}
+        sections={sections}
+        onClose={close}
+        title={`LOGS • ${activeTask.id.toUpperCase()}`}
+      />
+    );
+  }
+
   return (
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1} justifyContent="space-between">
@@ -177,28 +188,17 @@ function ModalLiveLogsApp() {
           ink-kanban-board — Modal Live Logs
         </Text>
         <Text color="gray">
-          {isOpen
-            ? "↑↓: navigate logs • Esc: close modal • q: quit"
-            : "↑↓/jk: focus • Enter: open logs modal • q: quit"}
+          ↑↓/jk: focus • Enter: open logs modal • q: quit
         </Text>
       </Box>
 
-      {isOpen && modalCard && activeTask ? (
-        <CardDetailModal
-          card={modalCard}
-          sections={sections}
-          onClose={close}
-          title={`LOGS • ${activeTask.id.toUpperCase()}`}
-        />
-      ) : (
-        <KanbanBoard
-          columns={columns}
-          focusedCardKey={focusedKey}
-          breakpoint={breakpoint}
-          density={density}
-          onCardPress={open}
-        />
-      )}
+      <KanbanBoard
+        columns={columns}
+        focusedCardKey={focusedKey}
+        breakpoint={breakpoint}
+        density={density}
+        onCardPress={open}
+      />
     </Box>
   );
 }

@@ -333,6 +333,16 @@ function ModalDemoApp() {
     if (task) open(toCard(task));
   };
 
+  if (isOpen && card) {
+    return (
+      <CardDetailModal
+        card={card}
+        sections={sections}
+        onClose={close}
+      />
+    );
+  }
+
   return (
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1} justifyContent="space-between">
@@ -340,27 +350,17 @@ function ModalDemoApp() {
           ink-kanban-board — Card Detail Modal
         </Text>
         <Text color="gray">
-          {isOpen
-            ? "Tab: sections • ↑↓: items • Space/Enter: interact • Esc: close"
-            : "↑↓←→/hjkl: navigate • Enter: open modal • q: quit"}
+          ↑↓←→/hjkl: navigate • Enter: open modal • q: quit
         </Text>
       </Box>
-      {isOpen && card ? (
-        <CardDetailModal
-          card={card}
-          sections={sections}
-          onClose={close}
-        />
-      ) : (
-        <KanbanBoard
-          columns={columns}
-          focusedCardKey={focusedKey}
-          breakpoint={breakpoint}
-          density={density}
-          maxItemsPerColumn={5}
-          onCardPress={handleCardPress}
-        />
-      )}
+      <KanbanBoard
+        columns={columns}
+        focusedCardKey={focusedKey}
+        breakpoint={breakpoint}
+        density={density}
+        maxItemsPerColumn={5}
+        onCardPress={handleCardPress}
+      />
     </Box>
   );
 }
