@@ -7,7 +7,6 @@ description: >-
 metadata:
   version: "1.0.0"
   last-reviewed: "2026-04-15"
-paths: "src/hooks/use-terminal-size.ts, src/kanban-board.tsx, src/kanban-card.tsx"
 ---
 
 # Responsive Layout
