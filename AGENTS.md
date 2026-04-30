@@ -74,3 +74,7 @@ Components never import from `examples/`. Examples import from `src/index.js`.
 - Every public export must go through `src/index.ts`
 - Cards adapt to density, not the other way around — never hardcode layout sizes
 - `@inkjs/ui` is the only runtime dependency — keep the dependency footprint minimal
+
+## References (carregue sob demanda)
+- Skill catalog: `agent-skills.md`
+

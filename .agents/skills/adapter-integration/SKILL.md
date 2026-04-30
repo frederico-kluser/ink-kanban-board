@@ -7,7 +7,6 @@ description: >-
 metadata:
   version: "1.0.0"
   last-reviewed: "2026-04-15"
-paths: "examples/pi-orq-adapter.ts"
 ---
 
 # Adapter Integration

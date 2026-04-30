@@ -7,7 +7,6 @@ description: >-
 metadata:
   version: "2.0.0"
   last-reviewed: "2026-04-15"
-paths: "examples/*.tsx, examples/*.ts, package.json"
 ---
 
 # Examples & Development

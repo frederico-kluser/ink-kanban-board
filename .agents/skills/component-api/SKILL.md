@@ -7,7 +7,6 @@ description: >-
 metadata:
   version: "3.0.0"
   last-reviewed: "2026-04-15"
-paths: "src/*.tsx, src/*.ts, src/ui/*.tsx, src/hooks/*.ts"
 ---
 
 # Component API
