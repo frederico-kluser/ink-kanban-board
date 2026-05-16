@@ -1,6 +1,19 @@
-# ink-kanban-board
+<div align="center">
 
-A modular, responsive Kanban board component for [Ink](https://github.com/vadimdemedes/ink) terminal applications. Zero domain coupling — bring your own data model and map it to the board's generic interfaces.
+# 🗂️ ink-kanban-board
+
+**A modular, responsive Kanban board component for [Ink](https://github.com/vadimdemedes/ink) terminal applications.**
+
+Zero domain coupling — bring your own data model and map it to the board's generic interfaces. Columns, cards, live timers, overflow scrolling and an interactive detail modal that all adapt to the terminal size.
+
+[![npm version](https://img.shields.io/npm/v/ink-kanban-board?color=cb3837&logo=npm)](https://www.npmjs.com/package/ink-kanban-board)
+[![npm downloads](https://img.shields.io/npm/dm/ink-kanban-board?color=cb3837&logo=npm)](https://www.npmjs.com/package/ink-kanban-board)
+[![license](https://img.shields.io/npm/l/ink-kanban-board?color=blue)](./LICENSE)
+[![Ink](https://img.shields.io/badge/built%20for-Ink%205%2B-61dafb?logo=react)](https://github.com/vadimdemedes/ink)
+
+<img src="https://raw.githubusercontent.com/frederico-kluser/ink-kanban-board/master/demo.png" alt="ink-kanban-board rendering a four-column board with live timers, status badges and a streaming logs panel in the terminal" width="100%" />
+
+</div>
 
 ## Installation
 
